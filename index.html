@@ -822,9 +822,176 @@
     color: var(--ink-faint);
     text-transform: uppercase;
   }
+
+  /* ---------- 잠금 화면 ---------- */
+  .lock-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background-image:
+      radial-gradient(ellipse at top, rgba(156, 106, 60, 0.08), transparent 60%),
+      radial-gradient(ellipse at bottom, rgba(156, 106, 60, 0.04), transparent 60%);
+  }
+  .lock-screen.show { display: flex; animation: fadeIn 0.3s ease; }
+
+  .lock-box {
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .lock-brand {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-style: italic;
+    color: var(--accent);
+    margin-bottom: 8px;
+    letter-spacing: -0.02em;
+  }
+
+  .lock-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+
+  .lock-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 24px;
+    stroke: var(--accent);
+    stroke-width: 1.3;
+    fill: none;
+    opacity: 0.85;
+  }
+
+  .lock-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .lock-msg {
+    color: var(--ink-dim);
+    font-size: 13px;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .lock-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 16px;
+    color: var(--ink);
+    margin-bottom: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+    text-align: center;
+    letter-spacing: 0.2em;
+  }
+  .lock-input:focus { border-color: var(--accent); }
+  .lock-input.error {
+    border-color: var(--danger);
+    animation: shake 0.4s;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+
+  .lock-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .lock-btn:hover { background: #7d5530; }
+  .lock-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .lock-error {
+    color: var(--danger);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 12px;
+    min-height: 16px;
+  }
+
+  .lock-hint {
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+
+  .lock-reset {
+    margin-top: 16px;
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .lock-reset:hover { color: var(--danger); }
 </style>
 </head>
 <body class="grain">
+
+<!-- 잠금 화면 -->
+<div class="lock-screen" id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-brand">매출 저널</div>
+    <div class="lock-sub">Sales Journal</div>
+
+    <svg class="lock-icon" id="lockIconSvg" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="10" rx="1.5"/>
+      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+      <circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none"/>
+    </svg>
+
+    <div class="lock-title" id="lockTitle">비밀번호 입력</div>
+    <div class="lock-msg" id="lockMsg">비밀번호를 입력해 주세요.</div>
+
+    <input type="password" id="lockInput" class="lock-input" placeholder="••••••••" autocomplete="off" inputmode="text">
+    <input type="password" id="lockInput2" class="lock-input" placeholder="••••••••  (확인)" autocomplete="off" inputmode="text" style="display:none;">
+
+    <button class="lock-btn" id="lockBtn">확인</button>
+
+    <div class="lock-error" id="lockError"></div>
+
+    <div class="lock-hint" id="lockHint">※ 최소 4자 이상</div>
+
+    <button class="lock-reset" id="lockReset" style="display:none;">비밀번호를 잊으셨나요?</button>
+  </div>
+</div>
 
 <div class="container">
   <!-- 상단 바 -->
@@ -1058,6 +1225,13 @@
           <input type="number" class="setting-input" id="settingHourEnd" min="1" max="24" style="width:52px;">
         </div>
       </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">🔐 보안</div>
+      <button class="btn-outline" id="btnChangePw">비밀번호 변경</button>
+      <button class="btn-outline" id="btnRemovePw">비밀번호 해제</button>
+      <button class="btn-outline" id="btnLogout">로그아웃 (이 기기에서만)</button>
     </div>
   </div>
 </div>
@@ -1908,6 +2082,229 @@ async function wipeAll() {
   await refreshAll();
 }
 
+// ---------- 인증 (비밀번호) ----------
+const SESSION_KEY = 'pos_session_unlock';
+
+async function hashPw(pw) {
+  const enc = new TextEncoder().encode(pw + '|salt_v1_sales_journal');
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function getStoredPwHash() {
+  const s = await dbGet('settings', 'pw_hash');
+  return s ? s.value : null;
+}
+
+async function setPwHash(pw) {
+  if (pw === null) {
+    await dbDelete('settings', 'pw_hash');
+  } else {
+    const h = await hashPw(pw);
+    await dbPut('settings', { key: 'pw_hash', value: h });
+  }
+}
+
+function isUnlocked() {
+  return localStorage.getItem(SESSION_KEY) === '1';
+}
+
+function setUnlocked(v) {
+  if (v) localStorage.setItem(SESSION_KEY, '1');
+  else localStorage.removeItem(SESSION_KEY);
+}
+
+function showLock() { $('lockScreen').classList.add('show'); }
+function hideLock() { $('lockScreen').classList.remove('show'); }
+
+// 잠금 화면 모드: 'set' (처음 설정) / 'unlock' (로그인) / 'change' (변경)
+let lockMode = 'unlock';
+let lockStep = 1;
+let lockCurrentPw = '';
+
+function setLockUI(mode) {
+  lockMode = mode;
+  lockStep = 1;
+  lockCurrentPw = '';
+  const input1 = $('lockInput');
+  const input2 = $('lockInput2');
+  const error = $('lockError');
+  const reset = $('lockReset');
+
+  input1.value = '';
+  input2.value = '';
+  input1.classList.remove('error');
+  input2.classList.remove('error');
+  error.textContent = '';
+
+  if (mode === 'set') {
+    $('lockTitle').textContent = '비밀번호 설정';
+    $('lockMsg').textContent = '처음 오셨네요. 사용할 비밀번호를 설정해주세요.';
+    $('lockHint').textContent = '※ 최소 4자 이상 · 한번 설정하면 다음부터 로그인에 필요합니다';
+    input1.placeholder = '새 비밀번호';
+    input2.placeholder = '비밀번호 확인';
+    input2.style.display = 'block';
+    reset.style.display = 'none';
+  } else if (mode === 'change') {
+    $('lockTitle').textContent = '비밀번호 변경';
+    $('lockMsg').textContent = '현재 비밀번호를 먼저 입력해주세요.';
+    $('lockHint').textContent = '';
+    input1.placeholder = '현재 비밀번호';
+    input2.placeholder = '새 비밀번호';
+    input2.style.display = 'none';
+    reset.style.display = 'none';
+  } else {
+    $('lockTitle').textContent = '비밀번호 입력';
+    $('lockMsg').textContent = '비밀번호를 입력해 주세요.';
+    $('lockHint').textContent = '';
+    input1.placeholder = '••••••••';
+    input2.style.display = 'none';
+    reset.style.display = 'block';
+  }
+  input1.focus();
+}
+
+async function handleLockSubmit() {
+  const input1 = $('lockInput');
+  const input2 = $('lockInput2');
+  const error = $('lockError');
+  const pw = input1.value;
+
+  error.textContent = '';
+  input1.classList.remove('error');
+  input2.classList.remove('error');
+
+  if (lockMode === 'set') {
+    if (pw.length < 4) {
+      input1.classList.add('error');
+      error.textContent = '4자 이상 입력해주세요';
+      return;
+    }
+    if (input2.value !== pw) {
+      input2.classList.add('error');
+      error.textContent = '비밀번호가 일치하지 않습니다';
+      return;
+    }
+    await setPwHash(pw);
+    setUnlocked(true);
+    hideLock();
+    toast('✓ 비밀번호가 설정되었습니다', 'success');
+  }
+
+  else if (lockMode === 'unlock') {
+    const stored = await getStoredPwHash();
+    const h = await hashPw(pw);
+    if (h === stored) {
+      setUnlocked(true);
+      hideLock();
+      toast('✓ 환영합니다', 'success');
+    } else {
+      input1.classList.add('error');
+      error.textContent = '비밀번호가 일치하지 않습니다';
+      input1.value = '';
+      input1.focus();
+    }
+  }
+
+  else if (lockMode === 'change') {
+    if (lockStep === 1) {
+      // 현재 비밀번호 확인
+      const stored = await getStoredPwHash();
+      const h = await hashPw(pw);
+      if (h !== stored) {
+        input1.classList.add('error');
+        error.textContent = '현재 비밀번호가 일치하지 않습니다';
+        input1.value = '';
+        return;
+      }
+      // 다음 단계
+      lockStep = 2;
+      input1.value = '';
+      input1.placeholder = '새 비밀번호';
+      input2.value = '';
+      input2.placeholder = '새 비밀번호 확인';
+      input2.style.display = 'block';
+      $('lockMsg').textContent = '새로 사용할 비밀번호를 입력하세요.';
+      $('lockHint').textContent = '※ 최소 4자 이상';
+      input1.focus();
+    } else {
+      if (pw.length < 4) {
+        input1.classList.add('error');
+        error.textContent = '4자 이상 입력해주세요';
+        return;
+      }
+      if (input2.value !== pw) {
+        input2.classList.add('error');
+        error.textContent = '비밀번호가 일치하지 않습니다';
+        return;
+      }
+      await setPwHash(pw);
+      hideLock();
+      toast('✓ 비밀번호가 변경되었습니다', 'success');
+    }
+  }
+}
+
+async function initAuth() {
+  const stored = await getStoredPwHash();
+  if (!stored) {
+    // 비밀번호 미설정 → 그냥 진입
+    return true;
+  }
+  if (isUnlocked()) {
+    return true;
+  }
+  setLockUI('unlock');
+  showLock();
+  return false;
+}
+
+function setupAuthEvents() {
+  $('lockBtn').addEventListener('click', handleLockSubmit);
+  $('lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleLockSubmit(); });
+  $('lockInput2').addEventListener('keydown', e => { if (e.key === 'Enter') handleLockSubmit(); });
+
+  // 비밀번호 초기화 (모든 데이터 삭제)
+  $('lockReset').addEventListener('click', async () => {
+    const warn = '비밀번호를 초기화하려면 저장된 모든 데이터를 삭제해야 합니다.\n\n정말 진행할까요?';
+    if (!confirm(warn)) return;
+    if (!confirm('정말로 모든 데이터와 비밀번호를 초기화합니다. 되돌릴 수 없습니다.')) return;
+    await dbClear('records');
+    await dbClear('files');
+    await dbClear('settings');
+    setUnlocked(false);
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  });
+
+  // 설정 모달 내 버튼
+  $('btnChangePw').addEventListener('click', async () => {
+    closeModal('settingsModal');
+    setLockUI('change');
+    showLock();
+  });
+
+  $('btnRemovePw').addEventListener('click', async () => {
+    const pw = prompt('비밀번호 해제를 위해 현재 비밀번호를 입력하세요:');
+    if (!pw) return;
+    const stored = await getStoredPwHash();
+    const h = await hashPw(pw);
+    if (h !== stored) { toast('❌ 비밀번호가 일치하지 않습니다', 'error'); return; }
+    if (!confirm('비밀번호를 해제하면 누구나 이 페이지에 접근할 수 있습니다.\n계속할까요?')) return;
+    await setPwHash(null);
+    toast('✓ 비밀번호가 해제되었습니다', 'success');
+  });
+
+  $('btnLogout').addEventListener('click', async () => {
+    const stored = await getStoredPwHash();
+    if (!stored) { toast('비밀번호가 설정되어 있지 않습니다', 'info'); return; }
+    setUnlocked(false);
+    closeModal('settingsModal');
+    setLockUI('unlock');
+    showLock();
+  });
+}
+
 // ---------- 이벤트 ----------
 function openModal(id) { $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
@@ -1984,8 +2381,26 @@ function setupEvents() {
   try {
     await openDB();
     await loadSettings();
+    setupAuthEvents();
     setupEvents();
-    await refreshAll();
+
+    const stored = await getStoredPwHash();
+
+    if (!stored) {
+      // 처음 방문 — 비밀번호 설정 화면 먼저
+      setLockUI('set');
+      showLock();
+      // 백그라운드에서 데이터도 준비
+      await refreshAll();
+    } else if (!isUnlocked()) {
+      // 비밀번호 설정됨 & 잠금 상태 — 로그인 화면
+      setLockUI('unlock');
+      showLock();
+      await refreshAll();
+    } else {
+      // 이미 로그인된 상태
+      await refreshAll();
+    }
   } catch (err) {
     toast('초기화 실패: ' + err.message, 'error');
     console.error(err);
