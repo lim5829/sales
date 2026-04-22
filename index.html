@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<meta name="theme-color" content="#faf7f2">
+<meta name="theme-color" content="#fdfbf7">
 <title>매출 저널 · Sales Journal</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,24 +12,24 @@
   @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 
   :root {
-    --bg: #faf7f2;
-    --bg-soft: #f3ede3;
+    --bg: #fdfbf7;
+    --bg-soft: #f7f2e9;
     --card: #ffffff;
-    --line: #e8e1d4;
-    --ink: #1a1714;
-    --ink-dim: #6b6558;
-    --ink-faint: #a09a8c;
-    --accent: #9c6a3c;
-    --accent-bright: #c8874d;
-    --accent-soft: rgba(156, 106, 60, 0.08);
-    --danger: #c94a2b;
-    --success: #4a7a3f;
-    --warn: #b88020;
-    --series-1: #9c6a3c;
-    --series-2: #4a7a3f;
-    --series-3: #c94a2b;
-    --series-4: #6b6558;
-    --series-5: #c8874d;
+    --line: #ede4d3;
+    --ink: #2a2420;
+    --ink-dim: #7a7265;
+    --ink-faint: #b8b1a0;
+    --accent: #c48442;
+    --accent-bright: #e5a868;
+    --accent-soft: rgba(196, 132, 66, 0.08);
+    --danger: #e35a3c;
+    --success: #6ba55a;
+    --warn: #d4a03e;
+    --series-1: #c48442;
+    --series-2: #6ba55a;
+    --series-3: #e35a3c;
+    --series-4: #9a8e7a;
+    --series-5: #e5a868;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -43,8 +43,8 @@
     font-size: 15px;
     line-height: 1.5;
     background-image:
-      radial-gradient(ellipse at top left, rgba(156, 106, 60, 0.06), transparent 50%),
-      radial-gradient(ellipse at bottom right, rgba(156, 106, 60, 0.03), transparent 50%);
+      radial-gradient(ellipse at top left, rgba(196, 132, 66, 0.05), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(229, 168, 104, 0.04), transparent 55%);
   }
 
   .grain::before {
@@ -52,7 +52,7 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
-    opacity: 0.025;
+    opacity: 0.015;
     z-index: 100;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
@@ -178,7 +178,7 @@
     align-items: center;
     gap: 10px;
   }
-  .btn-hero:hover { background: #7d5530; transform: translateY(-1px); }
+  .btn-hero:hover { background: #a56d36; transform: translateY(-1px); }
   .btn-hero svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.5; fill: none; }
 
   /* ---------- 대시보드 ---------- */
@@ -263,7 +263,7 @@
   .kpi-card.primary {
     grid-column: span 2;
     padding: 22px 20px;
-    background: linear-gradient(135deg, var(--card), #fffdf9);
+    background: linear-gradient(135deg, #ffffff, #fff8ea);
     border-color: var(--accent-soft);
   }
 
@@ -418,8 +418,8 @@
   .dow-bar { display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .dow-bar-visual { width: 100%; height: 100px; background: var(--bg-soft); border-radius: 2px; display: flex; align-items: flex-end; overflow: hidden; position: relative; }
   .dow-bar-fill { width: 100%; background: linear-gradient(180deg, var(--accent-bright), var(--accent)); border-radius: 2px 2px 0 0; transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1); }
-  .dow-bar-fill.weekend { background: linear-gradient(180deg, #d4a574, var(--accent)); }
-  .dow-bar-fill.peak { background: linear-gradient(180deg, var(--accent), #7d5530); }
+  .dow-bar-fill.weekend { background: linear-gradient(180deg, #f0c996, var(--accent)); }
+  .dow-bar-fill.peak { background: linear-gradient(180deg, var(--accent-bright), var(--accent)); }
   .dow-label { font-family: 'Fraunces', serif; font-size: 12px; font-weight: 500; }
   .dow-label.weekend { color: var(--danger); }
   .dow-label.saturday { color: #3a6ea5; }
@@ -928,7 +928,7 @@
     transition: all 0.2s;
     letter-spacing: 0.02em;
   }
-  .lock-btn:hover { background: #7d5530; }
+  .lock-btn:hover { background: #a56d36; }
   .lock-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
   .lock-error {
@@ -1717,7 +1717,7 @@ function renderLineChart() {
 
   const years = Object.keys(byYM).sort();
   const colors = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)'];
-  const colorVals = ['#9c6a3c', '#4a7a3f', '#c94a2b', '#6b6558', '#c8874d'];
+  const colorVals = ['#c48442', '#6ba55a', '#e35a3c', '#9a8e7a', '#e5a868'];
 
   let maxVal = 0;
   years.forEach(y => Object.values(byYM[y]).forEach(v => { if (v > maxVal) maxVal = v; }));
@@ -1731,13 +1731,13 @@ function renderLineChart() {
   let svg = '';
   for (let i = 0; i <= 4; i++) {
     const y = PT + (i / 4) * CH;
-    svg += `<line x1="${PL}" x2="${W-PR}" y1="${y}" y2="${y}" stroke="#e8e1d4" stroke-width="1"/>`;
-    svg += `<text x="${PL-8}" y="${y+3}" text-anchor="end" fill="#a09a8c" font-family="JetBrains Mono" font-size="9">${formatCurrency(maxVal * (1 - i/4))}</text>`;
+    svg += `<line x1="${PL}" x2="${W-PR}" y1="${y}" y2="${y}" stroke="#ede4d3" stroke-width="1"/>`;
+    svg += `<text x="${PL-8}" y="${y+3}" text-anchor="end" fill="#b8b1a0" font-family="JetBrains Mono" font-size="9">${formatCurrency(maxVal * (1 - i/4))}</text>`;
   }
   for (let m = 1; m <= 12; m++) {
-    svg += `<text x="${xs(m)}" y="${H-PB+16}" text-anchor="middle" fill="#a09a8c" font-family="JetBrains Mono" font-size="9">${m}</text>`;
+    svg += `<text x="${xs(m)}" y="${H-PB+16}" text-anchor="middle" fill="#b8b1a0" font-family="JetBrains Mono" font-size="9">${m}</text>`;
   }
-  svg += `<text x="${W/2}" y="${H-5}" text-anchor="middle" fill="#a09a8c" font-family="JetBrains Mono" font-size="8" letter-spacing="2">MONTH</text>`;
+  svg += `<text x="${W/2}" y="${H-5}" text-anchor="middle" fill="#b8b1a0" font-family="JetBrains Mono" font-size="8" letter-spacing="2">MONTH</text>`;
 
   years.forEach((y, idx) => {
     const color = colorVals[idx % colorVals.length];
@@ -1848,19 +1848,19 @@ function renderHourly(records) {
   let svg = '';
   for (let i = 0; i <= 4; i++) {
     const y = PT + (i / 4) * CH;
-    svg += `<line x1="${PL}" x2="${W-PR}" y1="${y}" y2="${y}" stroke="#e8e1d4" stroke-width="1"/>`;
-    svg += `<text x="${PL-7}" y="${y+3}" text-anchor="end" fill="#a09a8c" font-family="JetBrains Mono" font-size="9">${Math.round(maxCount * (1 - i/4))}</text>`;
-    svg += `<text x="${W-PR+7}" y="${y+3}" text-anchor="start" fill="#a09a8c" font-family="JetBrains Mono" font-size="9">${formatCurrency(maxRev * (1 - i/4))}</text>`;
+    svg += `<line x1="${PL}" x2="${W-PR}" y1="${y}" y2="${y}" stroke="#ede4d3" stroke-width="1"/>`;
+    svg += `<text x="${PL-7}" y="${y+3}" text-anchor="end" fill="#b8b1a0" font-family="JetBrains Mono" font-size="9">${Math.round(maxCount * (1 - i/4))}</text>`;
+    svg += `<text x="${W-PR+7}" y="${y+3}" text-anchor="start" fill="#b8b1a0" font-family="JetBrains Mono" font-size="9">${formatCurrency(maxRev * (1 - i/4))}</text>`;
   }
 
-  svg += `<text x="${PL-7}" y="${PT-10}" text-anchor="end" fill="#9c6a3c" font-family="JetBrains Mono" font-size="9" letter-spacing="1">건수</text>`;
-  svg += `<text x="${W-PR+7}" y="${PT-10}" text-anchor="start" fill="#4a7a3f" font-family="JetBrains Mono" font-size="9" letter-spacing="1">매출</text>`;
+  svg += `<text x="${PL-7}" y="${PT-10}" text-anchor="end" fill="#c48442" font-family="JetBrains Mono" font-size="9" letter-spacing="1">건수</text>`;
+  svg += `<text x="${W-PR+7}" y="${PT-10}" text-anchor="start" fill="#6ba55a" font-family="JetBrains Mono" font-size="9" letter-spacing="1">매출</text>`;
 
   hours.forEach((h, i) => {
     const x = PL + (i / hours.length) * CW + (CW / hours.length - barW) / 2;
     const barH = (byHour[h].count / maxCount) * CH;
     const y = PT + CH - barH;
-    svg += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="#9c6a3c" opacity="0.7" rx="1"/>`;
+    svg += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="#c48442" opacity="0.7" rx="1"/>`;
   });
 
   const linePath = hours.map((h, i) => {
@@ -1868,19 +1868,19 @@ function renderHourly(records) {
     const y = PT + CH - (byHour[h].revenue / maxRev) * CH;
     return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
   }).join(' ');
-  svg += `<path d="${linePath}" fill="none" stroke="#4a7a3f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  svg += `<path d="${linePath}" fill="none" stroke="#6ba55a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
 
   hours.forEach((h, i) => {
     const x = PL + (i / hours.length) * CW + CW / hours.length / 2;
     const y = PT + CH - (byHour[h].revenue / maxRev) * CH;
-    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#4a7a3f" stroke="#ffffff" stroke-width="1.5"/>`;
+    svg += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#6ba55a" stroke="#ffffff" stroke-width="1.5"/>`;
   });
 
   hours.forEach((h, i) => {
     const x = PL + (i / hours.length) * CW + CW / hours.length / 2;
-    svg += `<text x="${x}" y="${H-PB+15}" text-anchor="middle" fill="#a09a8c" font-family="JetBrains Mono" font-size="9">${h}</text>`;
+    svg += `<text x="${x}" y="${H-PB+15}" text-anchor="middle" fill="#b8b1a0" font-family="JetBrains Mono" font-size="9">${h}</text>`;
   });
-  svg += `<text x="${W/2}" y="${H-5}" text-anchor="middle" fill="#a09a8c" font-family="JetBrains Mono" font-size="8" letter-spacing="2">HOUR</text>`;
+  svg += `<text x="${W/2}" y="${H-5}" text-anchor="middle" fill="#b8b1a0" font-family="JetBrains Mono" font-size="8" letter-spacing="2">HOUR</text>`;
 
   $('hourChart').innerHTML = svg;
 }
