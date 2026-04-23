@@ -3941,11 +3941,12 @@ async function renderTodayMainPage() {
   $('mainTodayDate').innerHTML = `<em>${todayStr}</em>`;
   $('mainTodayDow').textContent = `${DOW_KO[dow]}요일`;
 
-  // 바 차트 영역 숨기기
+  // 바 차트 표시
   const chartEl = $('yearBarChart');
-  if (chartEl) chartEl.style.display = 'none';
+  if (chartEl) chartEl.style.display = '';
 
   if (allRecords.length === 0) {
+    $('yearBarRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">데이터 없음</div>';
     $('todayMainCards').innerHTML = '<div class="today-nodata-card">데이터가 없습니다</div>';
     return;
   }
@@ -3964,7 +3965,22 @@ async function renderTodayMainPage() {
     return { year: y, yearsBack, targetDate, analysis };
   });
 
-  // 날씨 병렬 fetch (데이터 있는 것만)
+  // ─── 연도별 바 차트 ───
+  const maxRev = Math.max(...pastData.map(d => d.analysis?.revenue || 0), 1);
+  $('yearBarRows').innerHTML = pastData.map(d => {
+    const rev = d.analysis?.revenue || 0;
+    const pct = Math.max(rev / maxRev * 100, rev > 0 ? 2 : 0).toFixed(1);
+    const valText = rev > 0 ? formatCurrency(rev) + '원' : '—';
+    const targetDow = new Date(d.targetDate + 'T12:00:00').getDay();
+    return `
+      <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[targetDow]})">
+        <div class="year-bar-label">${d.year}</div>
+        <div class="year-bar-track">
+          <div class="year-bar-fill ${rev > 0 ? 'muted' : 'no-data'}" style="width:${pct}%"></div>
+        </div>
+        <div class="year-bar-val">${valText}</div>
+      </div>`;
+  }).join('') || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
   const weatherResults = await Promise.all(
     pastData.map(d => d.analysis ? fetchWeather(d.targetDate) : Promise.resolve({ icon: '—' }))
   );
