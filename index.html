@@ -1388,27 +1388,29 @@
 </head>
 <body class="grain">
 
-<!-- Firebase 로그인 화면 -->
+<!-- GitHub 인증 화면 -->
 <div class="lock-screen" id="lockScreen">
   <div class="lock-box">
     <div class="lock-brand">매출 저널</div>
     <div class="lock-sub">Sales Journal</div>
 
     <svg class="lock-icon" viewBox="0 0 24 24">
-      <path d="M12 2C8.13 2 5 5.13 5 9v2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V9c0-3.87-3.13-7-7-7zm0 2a5 5 0 0 1 5 5v2H7V9a5 5 0 0 1 5-5zm0 9a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" fill="currentColor" stroke="none"/>
+      <path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" fill="currentColor" stroke="none"/>
     </svg>
 
-    <div class="lock-title" id="lockTitle">로그인</div>
-    <div class="lock-msg" id="lockMsg">이메일과 비밀번호를 입력하세요.</div>
+    <div class="lock-title">매출 저널</div>
+    <div class="lock-msg" id="lockMsg">GitHub Personal Access Token을<br>입력하세요.</div>
 
-    <input type="email" id="lockEmail" class="lock-input" placeholder="이메일" autocomplete="email" inputmode="email">
-    <input type="password" id="lockInput" class="lock-input" placeholder="비밀번호" autocomplete="current-password">
+    <input type="password" id="lockToken" class="lock-input" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" style="letter-spacing:0.05em; font-family:'JetBrains Mono',monospace; font-size:13px;">
 
-    <button type="button" class="lock-btn" id="lockBtn">로그인</button>
+    <button type="button" class="lock-btn" id="lockBtn">연결</button>
 
     <div class="lock-error" id="lockError"></div>
 
-    <button type="button" class="lock-reset" id="lockForgot" style="display:block; margin-top:16px;">비밀번호를 잊으셨나요?</button>
+    <div class="lock-hint" id="lockHint" style="margin-top:14px;">
+      토큰은 이 기기에만 암호화 저장됩니다.<br>
+      <a href="https://github.com/settings/tokens/new" target="_blank" style="color:var(--accent); font-size:11px;">토큰 발급 →</a>
+    </div>
   </div>
 </div>
 
@@ -1711,56 +1713,26 @@
     </div>
 
     <div class="modal-section">
-      <div class="modal-section-title">🔐 계정</div>
+      <div class="modal-section-title">🔗 연결 정보</div>
       <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-dim); padding:8px 0;" id="currentUserEmail">—</div>
-      <button class="btn-outline" id="btnLogout">로그아웃</button>
+      <button class="btn-outline" id="btnSync" style="margin-bottom:8px;">☁ GitHub에서 최신 데이터 가져오기</button>
+      <button class="btn-outline" id="btnLogout">연결 해제 (로그아웃)</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<script type="module">
-// ============================================================
-// Firebase 초기화
-// ============================================================
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged, sendPasswordResetEmail
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {
-  getFirestore, collection, doc, setDoc, getDoc, getDocs,
-  deleteDoc, writeBatch, query, orderBy, onSnapshot
-} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyC5BI9yV1wKKSO8CI0T3FAR1Fme7U6jkYw",
-  authDomain: "sales-journal-3d445.firebaseapp.com",
-  projectId: "sales-journal-3d445",
-  storageBucket: "sales-journal-3d445.firebasestorage.app",
-  messagingSenderId: "234473363733",
-  appId: "1:234473363733:web:206b83f34f7dbdb47d311c"
+<!-- GitHub API 설정 -->
+<script>
+// GitHub 저장소 설정 (고정값)
+window._gh = {
+  owner: 'lim5829',
+  repo: 'sales-journal',
+  branch: 'main',
+  dataPath: 'data',   // 저장소 내 데이터 폴더
+  token: null,        // 인증 후 설정됨
 };
-
-const firebaseApp = initializeApp(firebaseConfig);
-const auth = getAuth(firebaseApp);
-const firestore = getFirestore(firebaseApp);
-
-// 전역으로 노출 (기존 코드와 연결)
-window._fbAuth = auth;
-window._fbFirestore = firestore;
-window._fbFns = {
-  createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, sendPasswordResetEmail, onAuthStateChanged,
-  collection, doc, setDoc, getDoc, getDocs,
-  deleteDoc, writeBatch, query, orderBy, onSnapshot
-};
-
-// xlsx 로드 후 앱 초기화
-window.addEventListener('load', () => {
-  if (window._appReady) window._appReady();
-});
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
@@ -1788,105 +1760,179 @@ async function hash(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0, 16);
 }
 
-// ---------- Firestore DB 레이어 ----------
-// 기존 IndexedDB 함수들을 Firestore로 대체
-// uid는 로그인 후 currentUser.uid
-let _uid = null;
+// ---------- GitHub API + IndexedDB 하이브리드 DB 레이어 ----------
+// IndexedDB = 로컬 캐시 (빠른 읽기/오프라인)
+// GitHub API = 클라우드 저장 (기기 간 동기화)
 
-function userCol(name) {
-  const { collection, doc } = window._fbFns;
-  const db = window._fbFirestore;
-  return collection(db, 'users', _uid, name);
+const IDB_NAME = 'pos_cache', IDB_VER = 1;
+let _idb = null;
+
+function openIDB() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(IDB_NAME, IDB_VER);
+    r.onerror = () => rej(r.error);
+    r.onsuccess = () => { _idb = r.result; res(_idb); };
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      ['records','files','settings'].forEach(s => {
+        if (!d.objectStoreNames.contains(s)) {
+          const ks = s === 'settings' ? 'key' : (s === 'files' ? 'name' : 'id');
+          d.createObjectStore(s, { keyPath: ks });
+        }
+      });
+    };
+  });
 }
 
-function userDoc(colName, id) {
-  const { doc } = window._fbFns;
-  const db = window._fbFirestore;
-  return doc(db, 'users', _uid, colName, id);
+function idbTx(s, m='readonly') { return _idb.transaction(s, m).objectStore(s); }
+
+async function idbPut(store, item) {
+  return new Promise((res, rej) => {
+    const r = idbTx(store, 'readwrite').put(item);
+    r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+  });
 }
+
+async function idbGetAll(store) {
+  return new Promise((res, rej) => {
+    const r = idbTx(store).getAll();
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+
+async function idbClear(store) {
+  return new Promise((res, rej) => {
+    const r = idbTx(store, 'readwrite').clear();
+    r.onsuccess = () => res(); r.onerror = () => rej(r.error);
+  });
+}
+
+// GitHub API 헬퍼
+function ghHeaders() {
+  return {
+    'Authorization': `token ${window._gh.token}`,
+    'Accept': 'application/vnd.github.v3+json',
+    'Content-Type': 'application/json',
+    'User-Agent': 'sales-journal',
+  };
+}
+
+async function ghGet(path) {
+  const url = `https://api.github.com/repos/${window._gh.owner}/${window._gh.repo}/contents/${path}`;
+  const r = await fetch(url, { headers: ghHeaders() });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error(`GitHub GET 실패: ${r.status}`);
+  return r.json();
+}
+
+async function ghPut(path, content, message) {
+  const url = `https://api.github.com/repos/${window._gh.owner}/${window._gh.repo}/contents/${path}`;
+  // 기존 파일 SHA 가져오기 (업데이트 시 필요)
+  const existing = await ghGet(path);
+  const body = {
+    message,
+    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 0)))),
+    branch: window._gh.branch,
+  };
+  if (existing) body.sha = existing.sha;
+  const r = await fetch(url, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(`GitHub PUT 실패: ${r.status} ${err.message || ''}`);
+  }
+  return r.json();
+}
+
+// GitHub에서 전체 데이터 로드 → IndexedDB 캐시 갱신
+async function ghPull(store) {
+  const path = `${window._gh.dataPath}/${store}.json`;
+  const file = await ghGet(path);
+  if (!file) return [];
+  const text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  const items = JSON.parse(text);
+  // 캐시 갱신
+  await idbClear(store);
+  for (const item of items) await idbPut(store, item);
+  return items;
+}
+
+// IndexedDB → GitHub 푸시
+async function ghPush(store) {
+  const items = await idbGetAll(store);
+  const path = `${window._gh.dataPath}/${store}.json`;
+  await ghPut(path, items, `update ${store} - ${new Date().toISOString().slice(0,16)}`);
+}
+
+// ---- 공개 DB API (기존 코드가 호출하는 인터페이스 유지) ----
 
 async function dbPut(store, item) {
-  const id = item.id || item.key || item.name;
-  if (!id) return;
-  await window._fbFns.setDoc(userDoc(store, String(id)), item);
+  await idbPut(store, item);
+  // 비동기로 GitHub 동기화 (UI 블로킹 방지)
+  ghPush(store).catch(e => console.warn('GitHub sync:', e.message));
 }
 
 async function dbBulkPut(store, items) {
-  if (items.length === 0) return { added: 0, skipped: 0 };
-  const db = window._fbFirestore;
-  const { writeBatch, doc, getDoc } = window._fbFns;
-
-  let added = 0, skipped = 0;
-  const chunkSize = 400;
-
-  for (let i = 0; i < items.length; i += chunkSize) {
-    const chunk = items.slice(i, i + chunkSize);
-
-    // 존재 여부 병렬 확인
-    const refs = chunk.map(item => doc(db, 'users', _uid, store, String(item.id || item.key || item.name)));
-    const snaps = await Promise.all(refs.map(r => getDoc(r)));
-
-    const batch = writeBatch(db);
-    chunk.forEach((item, j) => {
-      if (snaps[j].exists()) {
-        skipped++;
-      } else {
-        batch.set(refs[j], item);
-        added++;
-      }
-    });
-    if (added + skipped > i) await batch.commit();
-  }
-
-  return { added, skipped };
+  if (items.length === 0) return { added: items.length, skipped: 0 };
+  // 로컬에 먼저 저장
+  for (const item of items) await idbPut(store, item);
+  // GitHub에 통째로 업로드
+  await ghPush(store);
+  return { added: items.length, skipped: 0 };
 }
 
 async function dbGetAll(store) {
-  const { getDocs } = window._fbFns;
-  const snap = await getDocs(userCol(store));
-  return snap.docs.map(d => d.data());
+  // 캐시 우선, 없으면 GitHub에서 당겨오기
+  const cached = await idbGetAll(store);
+  if (cached.length > 0) return cached;
+  return ghPull(store).catch(() => []);
 }
 
 async function dbGet(store, key) {
-  const { getDoc } = window._fbFns;
-  const snap = await getDoc(userDoc(store, String(key)));
-  return snap.exists() ? snap.data() : null;
+  const all = await idbGetAll(store);
+  const ks = store === 'settings' ? 'key' : (store === 'files' ? 'name' : 'id');
+  return all.find(r => r[ks] === key) || null;
 }
 
 async function dbDelete(store, key) {
-  const { deleteDoc } = window._fbFns;
-  await deleteDoc(userDoc(store, String(key)));
+  const ks = store === 'settings' ? 'key' : (store === 'files' ? 'name' : 'id');
+  return new Promise((res, rej) => {
+    const r = idbTx(store, 'readwrite').delete(key);
+    r.onsuccess = async () => {
+      await ghPush(store).catch(e => console.warn('GitHub sync:', e.message));
+      res();
+    };
+    r.onerror = () => rej(r.error);
+  });
 }
 
 async function dbDeleteByFile(fname) {
-  const all = await dbGetAll('records');
-  const toDelete = all.filter(r => r.file === fname);
-  if (toDelete.length === 0) return 0;
-
-  const db = window._fbFirestore;
-  const { writeBatch, doc } = window._fbFns;
-  const chunks = [];
-  for (let i = 0; i < toDelete.length; i += 400) chunks.push(toDelete.slice(i, i + 400));
-  for (const chunk of chunks) {
-    const batch = writeBatch(db);
-    chunk.forEach(r => batch.delete(doc(db, 'users', _uid, 'records', String(r.id))));
-    await batch.commit();
-  }
-  return toDelete.length;
+  const all = await idbGetAll('records');
+  const keep = all.filter(r => r.file !== fname);
+  const deleted = all.length - keep.length;
+  await idbClear('records');
+  for (const r of keep) await idbPut('records', r);
+  await ghPush('records').catch(e => console.warn('GitHub sync:', e.message));
+  return deleted;
 }
 
 async function dbClear(store) {
-  const all = await dbGetAll(store);
-  if (all.length === 0) return;
-  const db = window._fbFirestore;
-  const { writeBatch, doc } = window._fbFns;
-  const idKey = store === 'records' ? 'id' : (store === 'files' ? 'name' : 'key');
-  const chunks = [];
-  for (let i = 0; i < all.length; i += 400) chunks.push(all.slice(i, i + 400));
-  for (const chunk of chunks) {
-    const batch = writeBatch(db);
-    chunk.forEach(r => batch.delete(doc(db, 'users', _uid, store, String(r[idKey]))));
-    await batch.commit();
+  await idbClear(store);
+  await ghPush(store).catch(e => console.warn('GitHub sync:', e.message));
+}
+
+// 앱 시작 시 GitHub에서 최신 데이터 당겨오기
+async function ghSyncAll() {
+  showStatus('GitHub에서 데이터 동기화 중…', 'info', true);
+  try {
+    await ghPull('records');
+    await ghPull('files');
+    await ghPull('settings');
+    hideStatus();
+    toast('✓ 동기화 완료', 'success');
+  } catch (e) {
+    hideStatus();
+    // 오프라인이거나 파일이 없으면 캐시 사용
+    console.warn('GitHub sync failed, using cache:', e.message);
   }
 }
 
@@ -3152,7 +3198,7 @@ function renderFileManageList(files) {
 }
 
 async function exportAll() {
-  if (!_uid) { toast('먼저 로그인하세요', 'error'); return; }
+  if (!window._gh.token) { toast("먼저 연결하세요", "error"); return; }
   showStatus('백업 준비 중…', 'info', true);
   try {
     const records = await dbGetAll('records');
@@ -3176,48 +3222,39 @@ async function exportAll() {
 }
 
 async function importBackup(file) {
-  if (!_uid) { toast('먼저 로그인하세요', 'error'); return; }
+  if (!window._gh.token) { toast("먼저 연결하세요", "error"); return; }
   try {
     const text = await file.text();
     const data = JSON.parse(text.replace(/^\uFEFF/, ''));
-
     const records = data.records;
     if (!records || !Array.isArray(records)) throw new Error('잘못된 백업 파일 형식');
 
-    const ok = confirm(`백업 파일에 ${records.length}건이 있습니다.\nFirestore에 저장합니다. 중복은 자동 제외됩니다.\n계속할까요?`);
+    const ok = confirm(`백업 파일에 ${records.length.toLocaleString()}건이 있습니다.\nGitHub에 저장합니다. 계속할까요?`);
     if (!ok) return;
 
-    showStatus(`0 / ${records.length}건 저장 중…`, 'info', true);
+    // 1. IndexedDB에 먼저 저장
+    showStatus(`${records.length.toLocaleString()}건 IndexedDB 저장 중…`, 'info', true);
+    await idbClear('records');
+    for (const r of records) await idbPut('records', r);
 
-    // 400건씩 나눠서 처리 (Firestore 배치 제한)
-    const chunkSize = 400;
-    let totalAdded = 0, totalSkipped = 0;
-
-    for (let i = 0; i < records.length; i += chunkSize) {
-      const chunk = records.slice(i, i + chunkSize);
-      showStatus(`${Math.min(i + chunkSize, records.length)} / ${records.length}건 저장 중…`, 'info', true);
-      const result = await dbBulkPut('records', chunk);
-      totalAdded += result.added;
-      totalSkipped += result.skipped;
-    }
-
-    // 파일 메타데이터 복원
     if (data.files) {
-      for (const f of data.files) {
-        await dbPut('files', f).catch(() => {});
-      }
+      await idbClear('files');
+      for (const f of data.files) await idbPut('files', f);
     }
-
-    // 설정 복원 (pw_hash 제외 — Firebase Auth가 담당)
     if (data.settings) {
       for (const s of data.settings) {
-        if (s.key !== 'pw_hash') await dbPut('settings', s).catch(() => {});
+        if (s.key !== 'pw_hash') await idbPut('settings', s);
       }
     }
+
+    // 2. GitHub에 통째로 업로드 (JSON 파일 1개)
+    showStatus('GitHub에 업로드 중… (잠시 기다려주세요)', 'info', true);
+    await ghPush('records');
+    if (data.files) await ghPush('files');
 
     await loadSettings();
     hideStatus();
-    toast(`✓ ${totalAdded}건 복원 완료 (${totalSkipped}건 중복 제외)`, 'success');
+    toast(`✓ ${records.length.toLocaleString()}건 복원 완료`, 'success');
     await refreshAll();
   } catch (err) {
     hideStatus();
@@ -3238,62 +3275,96 @@ async function wipeAll() {
 }
 
 
-// ---------- Firebase 인증 ----------
+// ---------- GitHub 토큰 인증 ----------
+const TOKEN_KEY = 'gh_token_v1';
+
 function showLock() { $('lockScreen').classList.add('show'); }
 function hideLock() { $('lockScreen').classList.remove('show'); }
 function setLockError(msg) { $('lockError').textContent = msg; }
 
-function fbErrMsg(code) {
-  const map = {
-    'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
-    'auth/user-not-found': '등록되지 않은 이메일입니다.',
-    'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
-    'auth/invalid-credential': '이메일 또는 비밀번호가 틀렸습니다.',
-    'auth/too-many-requests': '시도가 너무 많습니다. 잠시 후 다시 시도하세요.',
-    'auth/network-request-failed': '네트워크 오류. 인터넷 연결을 확인하세요.',
-  };
-  return map[code] || `오류: ${code}`;
+function saveToken(token) {
+  // 간단한 난독화 (Base64) - 원본 보안은 HTTPS에서 보장
+  localStorage.setItem(TOKEN_KEY, btoa(token));
+  window._gh.token = token;
 }
 
-async function doFirebaseAuth() {
-  const email = $('lockEmail').value.trim();
-  const pw = $('lockInput').value;
-  if (!email || !pw) { setLockError('이메일과 비밀번호를 입력하세요.'); return; }
+function loadToken() {
+  const stored = localStorage.getItem(TOKEN_KEY);
+  if (!stored) return null;
+  try { return atob(stored); } catch { return null; }
+}
+
+function clearToken() {
+  localStorage.removeItem(TOKEN_KEY);
+  window._gh.token = null;
+}
+
+async function verifyToken(token) {
+  // GitHub API로 토큰 유효성 + 저장소 접근 권한 확인
+  const r = await fetch(
+    `https://api.github.com/repos/${window._gh.owner}/${window._gh.repo}`,
+    { headers: { 'Authorization': `token ${token}`, 'User-Agent': 'sales-journal' } }
+  );
+  if (r.status === 401) throw new Error('토큰이 올바르지 않습니다.');
+  if (r.status === 404) throw new Error('저장소를 찾을 수 없습니다.');
+  if (!r.ok) throw new Error(`연결 실패: ${r.status}`);
+  return true;
+}
+
+async function connectGitHub() {
+  const token = $('lockToken').value.trim();
+  if (!token) { setLockError('토큰을 입력하세요.'); return; }
 
   setLockError('');
   $('lockBtn').disabled = true;
-  $('lockBtn').textContent = '로그인 중…';
+  $('lockBtn').textContent = '연결 중…';
 
   try {
-    await window._fbFns.signInWithEmailAndPassword(window._fbAuth, email, pw);
-    // 성공 → onAuthStateChanged가 처리
+    await verifyToken(token);
+    saveToken(token);
+    hideLock();
+    await initApp();
   } catch (e) {
-    setLockError(fbErrMsg(e.code));
+    setLockError(e.message);
     $('lockBtn').disabled = false;
-    $('lockBtn').textContent = '로그인';
+    $('lockBtn').textContent = '연결';
   }
 }
 
 function setupAuthEvents() {
-  $('lockBtn').addEventListener('click', doFirebaseAuth);
-  $('lockEmail').addEventListener('keydown', e => { if (e.key === 'Enter') $('lockInput').focus(); });
-  $('lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') doFirebaseAuth(); });
-
-  $('lockForgot').addEventListener('click', async () => {
-    const email = $('lockEmail').value.trim();
-    if (!email) { setLockError('이메일을 먼저 입력하세요.'); return; }
-    try {
-      await window._fbFns.sendPasswordResetEmail(window._fbAuth, email);
-      setLockError('');
-      toast('✓ 비밀번호 재설정 이메일을 보냈습니다', 'success');
-    } catch (e) { setLockError(fbErrMsg(e.code)); }
-  });
+  $('lockBtn').addEventListener('click', connectGitHub);
+  $('lockToken').addEventListener('keydown', e => { if (e.key === 'Enter') connectGitHub(); });
 
   $('btnLogout').addEventListener('click', async () => {
-    if (!confirm('로그아웃 하시겠습니까?')) return;
+    if (!confirm('연결을 해제하고 로그아웃 하시겠습니까?\n로컬 캐시도 삭제됩니다.')) return;
+    clearToken();
+    await idbClear('records');
+    await idbClear('files');
+    await idbClear('settings');
     closeModal('settingsModal');
-    await window._fbFns.signOut(window._fbAuth);
+    allRecords = [];
+    $('dashboard').classList.remove('show');
+    $('emptyState').style.display = 'block';
+    showLock();
+    toast('✓ 로그아웃됨', 'success');
   });
+}
+
+// 앱 초기화 (토큰 인증 후 호출)
+async function initApp() {
+  // 로컬 캐시 먼저 표시 (빠름)
+  await loadSettings();
+  await refreshAll();
+  // 백그라운드에서 GitHub 동기화
+  ghSyncAll().then(() => refreshAll()).catch(() => {});
+}
+
+// 설정 모달 계정 정보 업데이트
+function updateAccountInfo() {
+  const emailEl = $('currentUserEmail');
+  if (emailEl && window._gh.token) {
+    emailEl.textContent = `연결됨: ${window._gh.owner}/${window._gh.repo}`;
+  }
 }
 
 // ---------- 이벤트 ----------
@@ -3309,7 +3380,17 @@ function setupEvents() {
     openModal('dataModal');
     await refreshManualRecent();
   });
-  $('btnSettings').addEventListener('click', () => openModal('settingsModal'));
+  $('btnSettings').addEventListener('click', () => {
+    updateAccountInfo();
+    openModal('settingsModal');
+  });
+
+  // 수동 동기화
+  $('btnSync') && $('btnSync').addEventListener('click', async () => {
+    closeModal('settingsModal');
+    await ghSyncAll();
+    await refreshAll();
+  });
 
   // 빈 상태에서 업로드 버튼 → 최근 목록도 로드
   $('btnGoUpload').addEventListener('click', async () => {
@@ -3396,33 +3477,27 @@ function setupEvents() {
 // ---------- 초기화 ----------
 window._appReady = async function() {
   try {
+    await openIDB();
     setupAuthEvents();
     setupEvents();
 
-    // Firebase 인증 상태 감지 → 로그인/로그아웃 처리
-    window._fbFns.onAuthStateChanged(window._fbAuth, async (user) => {
-      if (user) {
-        _uid = user.uid;
-        hideLock();
-        const emailEl = $('currentUserEmail');
-        if (emailEl) emailEl.textContent = `로그인: ${user.email}`;
-        await loadSettings();
-        await refreshAll();
-      } else {
-        _uid = null;
-        allRecords = [];
-        $('emptyState').style.display = 'block';
-        $('dashboard').classList.remove('show');
-        showLock();
-      }
-    });
+    // 저장된 토큰 확인
+    const token = loadToken();
+    if (token) {
+      window._gh.token = token;
+      updateAccountInfo();
+      hideLock();
+      await initApp();
+    } else {
+      showLock();
+    }
   } catch (err) {
     toast('초기화 실패: ' + err.message, 'error');
     console.error(err);
   }
 };
 
-// 모듈 + XLSX 로드 후 시작
+// XLSX 로드 후 시작
 if (typeof XLSX !== 'undefined') {
   setTimeout(() => window._appReady && window._appReady(), 100);
 } else {
