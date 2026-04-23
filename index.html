@@ -961,6 +961,170 @@
     text-underline-offset: 3px;
   }
   .lock-reset:hover { color: var(--danger); }
+
+  /* ---------- 수동 입력 UI ---------- */
+  .manual-tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 12px;
+    background: var(--bg-soft);
+    padding: 3px;
+    border-radius: 2px;
+  }
+
+  .manual-tab {
+    flex: 1;
+    padding: 8px 10px;
+    background: transparent;
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .manual-tab.active {
+    background: var(--card);
+    color: var(--accent);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    font-weight: 700;
+  }
+
+  .manual-panel { display: none; }
+  .manual-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+  .manual-paste {
+    width: 100%;
+    min-height: 160px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 12px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .manual-paste:focus { border-color: var(--accent); }
+
+  .manual-paste-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  .manual-paste-hint code {
+    background: var(--bg-soft);
+    padding: 1px 6px;
+    border-radius: 2px;
+    color: var(--ink-dim);
+  }
+
+  .manual-single {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .manual-single input {
+    background: var(--card);
+    border: 1px solid var(--line);
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink);
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 0;
+  }
+  .manual-single input:focus { border-color: var(--accent); }
+
+  .manual-add-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+  .manual-add-btn:hover { background: #a56d36; }
+
+  .manual-recent {
+    margin-top: 12px;
+    max-height: 150px;
+    overflow-y: auto;
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+  }
+
+  .manual-recent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    border-bottom: 1px solid var(--line);
+  }
+  .manual-recent-item:last-child { border-bottom: none; }
+  .manual-recent-item .date { color: var(--accent); }
+  .manual-recent-item .amt { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+  .manual-recent-item .rm {
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    cursor: pointer;
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+  .manual-recent-item .rm:hover { color: var(--danger); }
+
+  .manual-submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 10px;
+  }
+  .manual-submit-btn:hover { background: #a56d36; }
+  .manual-submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .manual-preview {
+    background: var(--bg-soft);
+    border-radius: 2px;
+    padding: 10px 12px;
+    margin-top: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    max-height: 120px;
+    overflow-y: auto;
+    display: none;
+  }
+  .manual-preview.show { display: block; }
+  .manual-preview .line { padding: 2px 0; }
+  .manual-preview .line.err { color: var(--danger); }
 </style>
 </head>
 <body class="grain">
@@ -1163,6 +1327,43 @@
         <input type="file" id="fileInput" accept=".xlsx,.xls" multiple>
       </div>
       <div class="status" id="status"></div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">✏️ 과거 매출 직접 입력</div>
+
+      <div class="manual-tabs">
+        <button class="manual-tab active" data-manual="paste">붙여넣기</button>
+        <button class="manual-tab" data-manual="single">한 건씩</button>
+      </div>
+
+      <!-- 붙여넣기 탭 -->
+      <div class="manual-panel active" id="manual-paste">
+        <textarea class="manual-paste" id="manualPasteArea" placeholder="2022-01&#9;3800000&#10;2022-02&#9;4100000&#10;2022-03-15&#9;125000&#10;..."></textarea>
+        <div class="manual-paste-hint">
+          한 줄에 하나씩 · <code>날짜 [탭/쉼표] 금액</code><br>
+          월별: <code>2022-01</code> · 일별: <code>2022-01-15</code> · 구분자: 탭·쉼표·공백
+        </div>
+        <div class="manual-preview" id="manualPreview"></div>
+        <button class="manual-submit-btn" id="manualPasteSubmit" disabled>붙여넣은 데이터 저장</button>
+      </div>
+
+      <!-- 한 건씩 탭 -->
+      <div class="manual-panel" id="manual-single">
+        <div class="manual-single">
+          <input type="month" id="manualDate" placeholder="YYYY-MM">
+          <input type="number" id="manualAmount" placeholder="매출액 (원)" inputmode="numeric">
+          <button class="manual-add-btn" id="manualAddBtn">추가</button>
+        </div>
+        <div class="manual-paste-hint">
+          ↑ 월별 입력이 기본 · 일자를 바꾸면 일별로 저장
+          <label style="display:inline-flex; align-items:center; gap:4px; margin-left:8px; cursor:pointer;">
+            <input type="checkbox" id="manualDailyMode" style="margin:0;">
+            <span>일별 입력</span>
+          </label>
+        </div>
+        <div class="manual-recent" id="manualRecent"></div>
+      </div>
     </div>
 
     <div class="modal-section">
@@ -1491,6 +1692,238 @@ async function handleFiles(fileList) {
   await refreshAll();
 }
 
+// ---------- 수동 입력 ----------
+function parseManualLine(line) {
+  line = line.trim();
+  if (!line) return null;
+
+  // 숫자(천단위 쉼표 포함 가능)를 마지막에서 추출
+  // 예: "2022-06 7,200,000" 또는 "2022-06\t7200000"
+  const amountMatch = line.match(/([0-9][0-9,]*\d|\d)\s*원?\s*$/);
+  if (!amountMatch) return null;
+  const amountStr = amountMatch[1].replace(/,/g, '');
+  const amount = Number(amountStr);
+  if (isNaN(amount) || amount < 0) return null;
+
+  // 금액 부분을 잘라낸 나머지가 날짜 부분
+  const dateStr = line.substring(0, amountMatch.index).trim().replace(/[,\t\s]+$/, '').trim();
+
+  // 월별 (YYYY-MM / YYYY.MM / YYYY/MM)
+  const monthMatch = dateStr.match(/^(\d{4})[-./](\d{1,2})$/);
+  if (monthMatch) {
+    const y = monthMatch[1];
+    const m = parseInt(monthMatch[2]);
+    if (m < 1 || m > 12) return null;
+    return { date: `${y}-${String(m).padStart(2, '0')}-01`, amount, isMonthly: true };
+  }
+
+  // 일별 (YYYY-MM-DD)
+  const dayMatch = dateStr.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+  if (dayMatch) {
+    const y = dayMatch[1];
+    const m = parseInt(dayMatch[2]);
+    const d = parseInt(dayMatch[3]);
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+    return {
+      date: `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+      amount, isMonthly: false
+    };
+  }
+
+  return null;
+}
+
+async function makeManualRecord(date, amount, isMonthly) {
+  // 월별은 "YYYY-MM-manual", 일별은 "YYYY-MM-DD-manual" 형식의 고유 ID
+  const tag = isMonthly ? 'M' : 'D';
+  const id = await hash(`manual|${date}|${tag}|${amount}`);
+  return {
+    id,
+    date,
+    time: isMonthly ? '00:00:01' : '00:00:00',  // 월별은 첫 초에 가상 배치
+    desc: isMonthly ? '월별 수기입력' : '일별 수기입력',
+    amount,
+    card: 0, cash: 0, easy: 0,
+    file: '__manual__',
+    manual: true,
+    monthly: isMonthly,
+  };
+}
+
+function previewManualPaste() {
+  const text = $('manualPasteArea').value.trim();
+  const preview = $('manualPreview');
+  const btn = $('manualPasteSubmit');
+
+  if (!text) {
+    preview.classList.remove('show');
+    btn.disabled = true;
+    return;
+  }
+
+  const lines = text.split('\n').filter(l => l.trim());
+  const parsed = [];
+  const errors = [];
+
+  lines.forEach((line, idx) => {
+    const r = parseManualLine(line);
+    if (r) parsed.push(r);
+    else errors.push({ idx: idx + 1, line });
+  });
+
+  let html = '';
+  if (parsed.length > 0) {
+    const totalAmt = parsed.reduce((s, p) => s + p.amount, 0);
+    html += `<div style="color:var(--success); margin-bottom:4px;">✓ ${parsed.length}건 인식 · 합계 ${formatCurrency(totalAmt)}원</div>`;
+  }
+  errors.slice(0, 3).forEach(e => {
+    html += `<div class="line err">✗ ${e.idx}행: "${escapeHtml(e.line.substring(0, 40))}"</div>`;
+  });
+  if (errors.length > 3) html += `<div class="line err">... 외 ${errors.length - 3}건</div>`;
+
+  preview.innerHTML = html;
+  preview.classList.add('show');
+  btn.disabled = parsed.length === 0;
+  btn._parsed = parsed;
+}
+
+async function submitManualPaste() {
+  const parsed = $('manualPasteSubmit')._parsed;
+  if (!parsed || parsed.length === 0) return;
+
+  const records = [];
+  for (const p of parsed) {
+    records.push(await makeManualRecord(p.date, p.amount, p.isMonthly));
+  }
+
+  const result = await dbBulkPut('records', records);
+
+  // 매뉴얼 파일 메타 업데이트 (있으면 건수 누적)
+  const existing = await dbGet('files', '__manual__');
+  await dbPut('files', {
+    name: '__manual__',
+    displayName: '수기 입력',
+    importedAt: new Date().toISOString(),
+    rowCount: (existing?.rowCount || 0) + result.added,
+    newCount: result.added,
+  });
+
+  $('manualPasteArea').value = '';
+  $('manualPreview').classList.remove('show');
+  $('manualPasteSubmit').disabled = true;
+
+  toast(`✓ ${result.added}건 추가 · ${result.skipped}건 중복`, 'success');
+  await refreshAll();
+  await refreshManualRecent();
+}
+
+async function addManualSingle() {
+  const dateInput = $('manualDate');
+  const amount = Number($('manualAmount').value);
+  const dailyMode = $('manualDailyMode').checked;
+
+  if (!dateInput.value) { toast('날짜를 선택하세요', 'error'); return; }
+  if (isNaN(amount) || amount < 0) { toast('올바른 금액을 입력하세요', 'error'); return; }
+
+  let date, isMonthly;
+  if (dailyMode) {
+    date = dateInput.value;
+    isMonthly = false;
+  } else {
+    date = dateInput.value + '-01';
+    isMonthly = true;
+  }
+
+  const record = await makeManualRecord(date, amount, isMonthly);
+  const result = await dbBulkPut('records', [record]);
+
+  const existing = await dbGet('files', '__manual__');
+  await dbPut('files', {
+    name: '__manual__',
+    displayName: '수기 입력',
+    importedAt: new Date().toISOString(),
+    rowCount: (existing?.rowCount || 0) + result.added,
+    newCount: result.added,
+  });
+
+  if (result.added > 0) {
+    toast(`✓ ${date.slice(0, isMonthly ? 7 : 10)} 저장됨`, 'success');
+    $('manualAmount').value = '';
+  } else {
+    toast('⚠ 이미 같은 값이 저장되어 있습니다', 'error');
+  }
+
+  await refreshAll();
+  await refreshManualRecent();
+}
+
+async function refreshManualRecent() {
+  const all = await dbGetAll('records');
+  const manualList = all.filter(r => r.manual).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+
+  const c = $('manualRecent');
+  if (manualList.length === 0) {
+    c.innerHTML = '';
+    return;
+  }
+
+  c.innerHTML = manualList.map(r => {
+    const label = r.monthly ? r.date.slice(0, 7) : r.date;
+    return `<div class="manual-recent-item">
+      <span class="date">${label}</span>
+      <span class="amt">${formatFull(r.amount)}</span>
+      <button class="rm" data-id="${r.id}" title="삭제">×</button>
+    </div>`;
+  }).join('');
+
+  c.querySelectorAll('.rm').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await dbDelete('records', btn.dataset.id);
+      // 매뉴얼 파일 카운트 감소
+      const existing = await dbGet('files', '__manual__');
+      if (existing) {
+        const remaining = (await dbGetAll('records')).filter(r => r.manual).length;
+        if (remaining === 0) {
+          await dbDelete('files', '__manual__');
+        } else {
+          await dbPut('files', { ...existing, rowCount: remaining });
+        }
+      }
+      toast('✓ 삭제됨', 'success');
+      await refreshAll();
+      await refreshManualRecent();
+    });
+  });
+}
+
+function updateManualDateInput() {
+  const input = $('manualDate');
+  const daily = $('manualDailyMode').checked;
+  input.type = daily ? 'date' : 'month';
+  input.value = '';
+}
+
+function setupManualEvents() {
+  // 탭 전환
+  document.querySelectorAll('.manual-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.manual-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.manual-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('manual-' + tab.dataset.manual).classList.add('active');
+    });
+  });
+
+  // 붙여넣기
+  $('manualPasteArea').addEventListener('input', previewManualPaste);
+  $('manualPasteSubmit').addEventListener('click', submitManualPaste);
+
+  // 한 건씩
+  $('manualAddBtn').addEventListener('click', addManualSingle);
+  $('manualDailyMode').addEventListener('change', updateManualDateInput);
+  $('manualAmount').addEventListener('keydown', e => { if (e.key === 'Enter') addManualSingle(); });
+}
+
 // ---------- 상태 새로고침 ----------
 let allRecords = [];
 let currentPeriod = 'all';
@@ -1577,10 +2010,28 @@ function deltaHtml(curr, prev) {
 
 function renderKpiHero(records) {
   const totalRev = records.reduce((s, r) => s + r.amount, 0);
-  const totalCount = records.length;
-  const avgPerTx = totalRev / totalCount;
-  const uniqDays = new Set(records.map(r => r.date)).size;
-  const dailyAvg = totalRev / uniqDays;
+
+  // 결제건수/건단가는 POS 기반만 (월별 수기입력 제외)
+  const posRecords = records.filter(r => !r.manual);
+  const totalCount = posRecords.length;
+  const avgPerTx = totalCount > 0 ? posRecords.reduce((s, r) => s + r.amount, 0) / totalCount : 0;
+
+  // 일평균은 월별 수기의 경우 해당 월의 일수로 환산
+  let totalDays = 0;
+  const dailyDates = new Set();
+  records.forEach(r => {
+    if (r.monthly) {
+      // 해당 월의 일수 더하기
+      const [y, m] = r.date.split('-').map(Number);
+      totalDays += new Date(y, m, 0).getDate();
+    } else {
+      dailyDates.add(r.date);
+    }
+  });
+  totalDays += dailyDates.size;
+  const dailyAvg = totalDays > 0 ? totalRev / totalDays : 0;
+
+  const hasManual = records.some(r => r.manual);
 
   $('kpiHero').innerHTML = `
     <div class="kpi-card primary">
@@ -1588,7 +2039,7 @@ function renderKpiHero(records) {
       <div class="kpi-card-value">${formatCurrency(totalRev)}<span class="unit">원</span></div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-card-label">결제 건수</div>
+      <div class="kpi-card-label">결제 건수${hasManual ? ' (POS)' : ''}</div>
       <div class="kpi-card-value">${totalCount.toLocaleString()}<span class="unit">건</span></div>
     </div>
     <div class="kpi-card">
@@ -1597,10 +2048,10 @@ function renderKpiHero(records) {
     </div>
     <div class="kpi-card">
       <div class="kpi-card-label">영업일수</div>
-      <div class="kpi-card-value">${uniqDays.toLocaleString()}<span class="unit">일</span></div>
+      <div class="kpi-card-value">${totalDays.toLocaleString()}<span class="unit">일</span></div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-card-label">건당 단가</div>
+      <div class="kpi-card-label">건당 단가${hasManual ? ' (POS)' : ''}</div>
       <div class="kpi-card-value">${formatCurrency(Math.round(avgPerTx))}<span class="unit">원</span></div>
     </div>
   `;
@@ -1760,6 +2211,9 @@ function renderLineChart() {
 
 // --- 요일별 ---
 function renderDayOfWeek(records) {
+  // 월별 수기입력은 1일에 몰려있어서 요일 분석 왜곡 → 제외
+  records = records.filter(r => !r.monthly);
+
   const dowNames = ['일', '월', '화', '수', '목', '금', '토'];
   const byDow = Array.from({ length: 7 }, () => ({ revenue: 0, count: 0, days: new Set() }));
 
@@ -1824,6 +2278,9 @@ function renderDowTable(records) {
 
 // --- 시간대 ---
 function renderHourly(records) {
+  // 수기입력 데이터는 시간대 분석에서 제외 (POS 데이터만)
+  records = records.filter(r => !r.manual);
+
   const byHour = Array.from({ length: 24 }, () => ({ revenue: 0, count: 0 }));
   records.forEach(r => {
     const h = parseHour(r.time);
@@ -1887,9 +2344,12 @@ function renderHourly(records) {
 
 // --- 인사이트 ---
 function renderInsights(records) {
+  // 요일/시간/최고일 분석은 POS 기반으로 (월별 수기 제외)
+  const posRecords = records.filter(r => !r.monthly);
+
   const dowNames = ['일', '월', '화', '수', '목', '금', '토'];
   const byDow = Array.from({ length: 7 }, () => ({ revenue: 0, days: new Set() }));
-  records.forEach(r => {
+  posRecords.forEach(r => {
     const dow = new Date(r.date).getDay();
     byDow[dow].revenue += r.amount;
     byDow[dow].days.add(r.date);
@@ -1898,19 +2358,21 @@ function renderInsights(records) {
   // 최고 요일
   const avgs = byDow.map(d => d.days.size > 0 ? d.revenue / d.days.size : 0);
   const peakDow = avgs.indexOf(Math.max(...avgs));
-  const lowDow = avgs.indexOf(Math.min(...avgs.filter(a => a > 0)));
+  const nonZeroAvgs = avgs.filter(a => a > 0);
+  const lowDow = nonZeroAvgs.length > 0 ? avgs.indexOf(Math.min(...nonZeroAvgs)) : 0;
 
-  // 최고 시간대
+  // 최고 시간대 (POS만)
+  const hourRecords = records.filter(r => !r.manual);
   const byHour = Array.from({ length: 24 }, () => 0);
-  records.forEach(r => {
+  hourRecords.forEach(r => {
     const h = parseHour(r.time);
     if (h >= 0 && h < 24) byHour[h] += r.amount;
   });
   const peakHour = byHour.indexOf(Math.max(...byHour));
 
-  // 최고 매출일
+  // 최고 매출일 (POS만 — 일별 수기는 포함)
   const byDate = {};
-  records.forEach(r => {
+  posRecords.forEach(r => {
     if (!byDate[r.date]) byDate[r.date] = 0;
     byDate[r.date] += r.amount;
   });
@@ -1919,28 +2381,45 @@ function renderInsights(records) {
     if (byDate[d] > peakDateRev) { peakDateRev = byDate[d]; peakDate = d; }
   }
 
-  const insights = [
-    {
+  const insights = [];
+
+  if (posRecords.length > 0) {
+    insights.push({
       icon: '★',
       text: `가장 매출이 좋은 요일은 <strong>${dowNames[peakDow]}요일</strong>`,
       val: formatCurrency(avgs[peakDow]) + '원/일'
-    },
-    {
-      icon: '♦',
-      text: `피크 시간대는 <strong>${peakHour}시</strong>`,
-      val: formatCurrency(byHour[peakHour]) + '원'
-    },
-    {
-      icon: '▲',
-      text: `최고 매출일 <strong>${peakDate}</strong>`,
-      val: formatCurrency(peakDateRev) + '원'
-    },
-    {
-      icon: '○',
-      text: `가장 한가한 요일 <strong>${dowNames[lowDow]}요일</strong>`,
-      val: formatCurrency(avgs[lowDow]) + '원/일'
-    },
-  ];
+    });
+
+    if (hourRecords.length > 0) {
+      insights.push({
+        icon: '♦',
+        text: `피크 시간대는 <strong>${peakHour}시</strong>`,
+        val: formatCurrency(byHour[peakHour]) + '원'
+      });
+    }
+
+    if (peakDate) {
+      insights.push({
+        icon: '▲',
+        text: `최고 매출일 <strong>${peakDate}</strong>`,
+        val: formatCurrency(peakDateRev) + '원'
+      });
+    }
+
+    if (nonZeroAvgs.length > 1) {
+      insights.push({
+        icon: '○',
+        text: `가장 한가한 요일 <strong>${dowNames[lowDow]}요일</strong>`,
+        val: formatCurrency(avgs[lowDow]) + '원/일'
+      });
+    }
+  } else {
+    insights.push({
+      icon: '—',
+      text: `POS 데이터를 추가하면 요일·시간대 인사이트가 표시됩니다`,
+      val: ''
+    });
+  }
 
   $('insights').innerHTML = insights.map(ins => `
     <div class="insight-row">
@@ -1956,20 +2435,41 @@ function renderYearly() {
   const byYear = {};
   allRecords.forEach(r => {
     const y = r.date.slice(0, 4);
-    if (!byYear[y]) byYear[y] = { revenue: 0, count: 0, days: new Set() };
+    if (!byYear[y]) byYear[y] = { revenue: 0, posCount: 0, totalDays: 0, dailyDates: new Set(), monthlyMonths: new Set() };
     byYear[y].revenue += r.amount;
-    byYear[y].count += 1;
-    byYear[y].days.add(r.date);
+    if (!r.manual) byYear[y].posCount += 1;
+
+    if (r.monthly) {
+      byYear[y].monthlyMonths.add(r.date.slice(0, 7));
+    } else {
+      byYear[y].dailyDates.add(r.date);
+    }
+  });
+
+  // 각 연도별 총 영업일수 계산
+  Object.keys(byYear).forEach(y => {
+    const d = byYear[y];
+    let days = d.dailyDates.size;
+    // 월별 수기입력만 있는 월은 해당 월의 일수로 환산
+    d.monthlyMonths.forEach(ym => {
+      const hasDaily = Array.from(d.dailyDates).some(date => date.startsWith(ym));
+      if (!hasDaily) {
+        const [yr, mo] = ym.split('-').map(Number);
+        days += new Date(yr, mo, 0).getDate();
+      }
+    });
+    d.totalDays = days;
   });
 
   const years = Object.keys(byYear).sort();
   const html = years.map((y, i) => {
     const prev = i > 0 ? byYear[years[i-1]] : null;
-    const dailyAvg = byYear[y].revenue / byYear[y].days.size;
+    const dailyAvg = byYear[y].totalDays > 0 ? byYear[y].revenue / byYear[y].totalDays : 0;
+    const countDisplay = byYear[y].posCount > 0 ? byYear[y].posCount.toLocaleString() : '—';
     return `<tr>
       <td>${y}</td>
       <td class="num">${formatFull(byYear[y].revenue)}</td>
-      <td class="num">${byYear[y].count.toLocaleString()}</td>
+      <td class="num">${countDisplay}</td>
       <td class="num">${formatFull(Math.round(dailyAvg))}</td>
       <td class="num">${prev ? deltaHtml(byYear[y].revenue, prev.revenue) : '<span class="delta flat">—</span>'}</td>
     </tr>`;
@@ -2020,24 +2520,31 @@ function renderFileManageList(files) {
     return;
   }
   files.sort((a, b) => b.importedAt.localeCompare(a.importedAt));
-  c.innerHTML = files.map(f => `
-    <div class="file-list-item">
-      <div style="flex:1; overflow:hidden;">
-        <div class="fname">${escapeHtml(f.name)}</div>
-        <div class="meta">${f.rowCount}건 · ${new Date(f.importedAt).toLocaleDateString('ko-KR')}</div>
+  c.innerHTML = files.map(f => {
+    const isManual = f.name === '__manual__';
+    const displayName = isManual ? '✏️ 수기 입력 데이터' : f.name;
+    const dateLabel = isManual ? '최근 수정' : '업로드';
+    return `
+      <div class="file-list-item">
+        <div style="flex:1; overflow:hidden;">
+          <div class="fname">${escapeHtml(displayName)}</div>
+          <div class="meta">${f.rowCount}건 · ${dateLabel}: ${new Date(f.importedAt).toLocaleDateString('ko-KR')}</div>
+        </div>
+        <button class="del-btn" data-file="${escapeHtml(f.name)}" title="삭제">🗑</button>
       </div>
-      <button class="del-btn" data-file="${escapeHtml(f.name)}" title="삭제">🗑</button>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 
   c.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const fname = btn.dataset.file;
-      if (!confirm(`"${fname}"의 모든 데이터를 삭제할까요?`)) return;
+      const label = fname === '__manual__' ? '수기 입력 데이터' : fname;
+      if (!confirm(`"${label}"의 모든 데이터를 삭제할까요?`)) return;
       const deleted = await dbDeleteByFile(fname);
       await dbDelete('files', fname);
       toast(`✓ ${deleted}건 삭제됨`, 'success');
       await refreshAll();
+      if (fname === '__manual__') await refreshManualRecent();
     });
   });
 }
@@ -2310,12 +2817,20 @@ function openModal(id) { $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
 
 function setupEvents() {
-  // 빈 상태 → 업로드 모달
-  $('btnGoUpload').addEventListener('click', () => openModal('dataModal'));
+  setupManualEvents();
 
   // 톱바 아이콘
-  $('btnData').addEventListener('click', () => openModal('dataModal'));
+  $('btnData').addEventListener('click', async () => {
+    openModal('dataModal');
+    await refreshManualRecent();
+  });
   $('btnSettings').addEventListener('click', () => openModal('settingsModal'));
+
+  // 빈 상태에서 업로드 버튼 → 최근 목록도 로드
+  $('btnGoUpload').addEventListener('click', async () => {
+    openModal('dataModal');
+    await refreshManualRecent();
+  });
 
   // 모달 닫기
   document.querySelectorAll('[data-close]').forEach(btn => {
