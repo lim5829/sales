@@ -2059,6 +2059,14 @@ function renderKpiHero(records) {
 
 // --- 전년 동기 비교 ---
 function renderVsYear() {
+  // 전체 기간을 볼 때는 YoY 비교가 의미 없음 → 위젯 숨김
+  const widget = $('vsYearBlock').closest('.widget');
+  if (currentPeriod === 'all') {
+    if (widget) widget.style.display = 'none';
+    return;
+  }
+  if (widget) widget.style.display = '';
+
   // 현재 기간과 같은 길이의 작년 데이터와 비교
   const records = filterByPeriod(allRecords, currentPeriod);
   if (records.length === 0) { $('vsYearBlock').innerHTML = '<div class="file-empty">데이터 부족</div>'; return; }
