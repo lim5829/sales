@@ -1316,6 +1316,119 @@
     color: var(--ink-dim);
     font-variant-numeric: tabular-nums;
   }
+  /* 선택한 날 매출 블록 */
+  .sd-block {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 14px 14px 10px;
+    margin-bottom: 12px;
+  }
+  .sd-revenue {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+  }
+  .sd-revenue .u {
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin-left: 3px;
+    font-weight: 400;
+  }
+  .sd-label {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .sd-compares {
+    display: flex;
+    gap: 14px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    flex-wrap: wrap;
+  }
+  .sd-compare {
+    display: flex;
+    flex-direction: column;
+    font-family: 'Pretendard', sans-serif;
+  }
+  .sd-compare-label {
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    letter-spacing: 0.03em;
+  }
+  .sd-compare-val {
+    font-size: 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+  .sd-compare-val.up { color: var(--success); }
+  .sd-compare-val.down { color: var(--danger); }
+  .sd-compare-val.flat { color: var(--ink-faint); }
+  .sd-compare-sub {
+    font-size: 9px;
+    color: var(--ink-faint);
+    font-weight: 400;
+    margin-top: 1px;
+  }
+
+  /* 시간대 미니 차트 */
+  .sd-hour-chart {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--line);
+  }
+  .sd-hour-label {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .sd-hour-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 50px;
+  }
+  .sd-hour-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+  .sd-hour-bar {
+    width: 100%;
+    background: var(--accent);
+    opacity: 0.6;
+    border-radius: 2px 2px 0 0;
+    min-height: 1px;
+    transition: height 0.4s ease;
+  }
+  .sd-hour-bar.peak { opacity: 1; }
+  .sd-hour-bar.empty { background: var(--bg-soft); opacity: 1; }
+  .sd-hour-tick {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 8px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
   /* 오늘 탭 컴팩트 카드 */
   .today-main-card {
     display: grid;
@@ -1911,6 +2024,8 @@
           </div>
           <button class="today-nav-btn" id="todayNavNext" title="다음 날">›</button>
         </div>
+        <!-- 선택한 날 매출 (데이터 있을 때만) -->
+        <div id="selectedDayBlock" style="display:none"></div>
         <!-- 연도별 바 차트 -->
         <div class="year-bar-chart" id="yearBarChart">
           <div class="year-bar-title">같은 요일 연도별 매출 비교</div>
@@ -4090,15 +4205,99 @@ async function renderTodayMainPage() {
   $('mainTodayDate').innerHTML = `<em>${todayStr}</em>`;
   $('mainTodayDow').textContent = `${DOW_KO[dow]}요일${isToday ? ' · 오늘' : ''}`;
 
-  // 다음 날 버튼: 제한 없음 (과거 데이터만 보여주므로)
+  // 다음 날 버튼: 제한 없음
   $('todayNavNext').disabled = false;
+
+  // 선택한 날의 데이터 분석
+  const selectedAnalysis = analyzeDayRecords(todayStr);
+  const sdBlock = $('selectedDayBlock');
+
+  if (selectedAnalysis && selectedAnalysis.revenue > 0) {
+    // 전주 동요일 (7일 전)
+    const weekAgo = new Date(baseDate);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+    const weekAgoData = analyzeDayRecords(weekAgoStr);
+
+    // 전년 동요일 (±3일 범위에서 같은 요일)
+    const yearAgoStr = getSameDayOfWeek(todayStr, 1);
+    const yearAgoData = analyzeDayRecords(yearAgoStr);
+
+    const renderCompare = (curr, prev, label, prevDateStr) => {
+      if (!prev || prev.revenue === 0) {
+        return `
+          <div class="sd-compare">
+            <span class="sd-compare-label">${label}</span>
+            <span class="sd-compare-val flat">—</span>
+            <span class="sd-compare-sub">데이터 없음</span>
+          </div>`;
+      }
+      const diff = curr.revenue - prev.revenue;
+      const pct = (diff / prev.revenue * 100).toFixed(1);
+      const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      const arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '―');
+      const sign = diff > 0 ? '+' : '';
+      return `
+        <div class="sd-compare">
+          <span class="sd-compare-label">${label}</span>
+          <span class="sd-compare-val ${cls}">${arrow} ${sign}${pct}%</span>
+          <span class="sd-compare-sub">${prevDateStr} · ${prev.revenue.toLocaleString()}원</span>
+        </div>`;
+    };
+
+    // 시간대 차트 (0~23시)
+    const hourRev = {};
+    allRecords
+      .filter(r => r.date === todayStr && !r.monthly && r.time)
+      .forEach(r => {
+        const h = parseInt(r.time.slice(0,2));
+        if (h >= 0 && h < 24) hourRev[h] = (hourRev[h] || 0) + r.amount;
+      });
+    const hourList = Object.keys(hourRev).map(Number);
+    const minHour = hourList.length > 0 ? Math.min(...hourList) : 8;
+    const maxHour = hourList.length > 0 ? Math.max(...hourList) : 22;
+    const peakHour = selectedAnalysis.peakHour;
+    const maxHourRev = Math.max(...Object.values(hourRev), 1);
+
+    let hourChart = '<div class="sd-hour-chart"><div class="sd-hour-label">시간대별 매출</div><div class="sd-hour-bars">';
+    for (let h = minHour; h <= maxHour; h++) {
+      const rev = hourRev[h] || 0;
+      const height = rev > 0 ? Math.max(rev / maxHourRev * 100, 5) : 0;
+      const isPeak = h === peakHour;
+      const cls = rev > 0 ? (isPeak ? 'peak' : '') : 'empty';
+      hourChart += `
+        <div class="sd-hour-bar-col" title="${h}시 ${rev.toLocaleString()}원">
+          <div class="sd-hour-bar ${cls}" style="height:${height}%"></div>
+          <div class="sd-hour-tick">${h}</div>
+        </div>`;
+    }
+    hourChart += '</div></div>';
+
+    sdBlock.innerHTML = `
+      <div class="sd-block">
+        <div class="sd-label">${isToday ? '오늘' : '선택한 날'} 매출</div>
+        <div class="sd-revenue">${selectedAnalysis.revenue.toLocaleString()}<span class="u">원</span></div>
+        <div style="margin-top:6px; font-family:'Pretendard',sans-serif; font-size:11px; color:var(--ink-faint);">
+          ${selectedAnalysis.count}건 · 건단가 ${selectedAnalysis.avgTx.toLocaleString()}원${selectedAnalysis.peakHour != null ? ` · 피크 ${selectedAnalysis.peakHour}시` : ''}
+        </div>
+        <div class="sd-compares">
+          ${renderCompare(selectedAnalysis, weekAgoData, '전주 대비', weekAgoStr.slice(5))}
+          ${renderCompare(selectedAnalysis, yearAgoData, '전년 대비', yearAgoStr.slice(2).replace(/-/g, '.'))}
+        </div>
+        ${hourChart}
+      </div>`;
+    sdBlock.style.display = '';
+  } else {
+    sdBlock.style.display = 'none';
+    sdBlock.innerHTML = '';
+  }
 
   // 바 차트 표시
   const chartEl = $('yearBarChart');
   if (chartEl) chartEl.style.display = '';
 
   if (allRecords.length === 0) {
-    $('yearBarRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">데이터 없음</div>';
+    $('yearBarRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
     $('todayMainCards').innerHTML = '<div class="today-nodata-card">데이터가 없습니다</div>';
     return;
   }
