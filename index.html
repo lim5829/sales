@@ -2404,7 +2404,12 @@ async function ghPush(store) {
     const err = await r.json().catch(() => ({}));
     throw new Error(`GitHub PUT 실패: ${r.status} ${err.message || ''}`);
   }
-  return r.json();
+  const result = await r.json();
+  // 방금 push한 SHA 저장 → 다음번 pull 스킵
+  if (result.content?.sha) {
+    localStorage.setItem(`gh_sha_${store}`, result.content.sha);
+  }
+  return result;
 }
 
 // ---- 공개 DB API (기존 코드가 호출하는 인터페이스 유지) ----
@@ -3894,21 +3899,45 @@ function setupAuthEvents() {
 async function initApp() {
   await loadSettings();
 
-  // GitHub에서 최신 데이터 먼저 가져오기 (캐시 무시)
-  showStatus('GitHub에서 데이터 가져오는 중…', 'info', true);
-  try {
-    await ghPull('records');
-    await ghPull('files');
-    await ghPull('settings');
-    await loadSettings();
-    hideStatus();
-  } catch (e) {
-    hideStatus();
-    // 오프라인이면 캐시로 동작
-    console.warn('GitHub sync failed, using cache:', e.message);
+  // 1) 로컬 캐시로 즉시 화면 표시 (0초 대기)
+  await refreshAll();
+
+  // 2) 백그라운드에서 GitHub 동기화 (화면은 이미 떠있음)
+  (async () => {
+    try {
+      // SHA 비교로 변경 없으면 다운로드 생략
+      const changed = await ghCheckAndSync('records');
+      const filesChanged = await ghCheckAndSync('files');
+      await ghCheckAndSync('settings');
+
+      if (changed || filesChanged) {
+        await loadSettings();
+        await refreshAll();
+        toast('✓ 최신 데이터로 업데이트됨', 'success');
+      }
+    } catch (e) {
+      console.warn('GitHub sync failed:', e.message);
+    }
+  })();
+}
+
+// SHA 비교 후 변경이 있을 때만 pull
+async function ghCheckAndSync(store) {
+  const path = `${window._gh.dataPath}/${store}.json`;
+  const file = await ghGet(path);
+  if (!file) return false;
+
+  // 이전에 받은 SHA와 비교
+  const lastShaKey = `gh_sha_${store}`;
+  const lastSha = localStorage.getItem(lastShaKey);
+  if (lastSha === file.sha) {
+    return false; // 변경 없음 → 다운로드 스킵
   }
 
-  await refreshAll();
+  // 변경됨 → pull
+  await ghPull(store);
+  localStorage.setItem(lastShaKey, file.sha);
+  return true;
 }
 
 // 설정 모달 계정 정보 업데이트
