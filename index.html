@@ -4246,32 +4246,7 @@ async function renderTodayMainPage() {
     };
 
     // 시간대 차트 (0~23시)
-    const hourRev = {};
-    allRecords
-      .filter(r => r.date === todayStr && !r.monthly && r.time)
-      .forEach(r => {
-        const h = parseInt(r.time.slice(0,2));
-        if (h >= 0 && h < 24) hourRev[h] = (hourRev[h] || 0) + r.amount;
-      });
-    const hourList = Object.keys(hourRev).map(Number);
-    const minHour = hourList.length > 0 ? Math.min(...hourList) : 8;
-    const maxHour = hourList.length > 0 ? Math.max(...hourList) : 22;
-    const peakHour = selectedAnalysis.peakHour;
-    const maxHourRev = Math.max(...Object.values(hourRev), 1);
-
-    let hourChart = '<div class="sd-hour-chart"><div class="sd-hour-label">시간대별 매출</div><div class="sd-hour-bars">';
-    for (let h = minHour; h <= maxHour; h++) {
-      const rev = hourRev[h] || 0;
-      const height = rev > 0 ? Math.max(rev / maxHourRev * 100, 5) : 0;
-      const isPeak = h === peakHour;
-      const cls = rev > 0 ? (isPeak ? 'peak' : '') : 'empty';
-      hourChart += `
-        <div class="sd-hour-bar-col" title="${h}시 ${rev.toLocaleString()}원">
-          <div class="sd-hour-bar ${cls}" style="height:${height}%"></div>
-          <div class="sd-hour-tick">${h}</div>
-        </div>`;
-    }
-    hourChart += '</div></div>';
+    // 제거됨
 
     sdBlock.innerHTML = `
       <div class="sd-block">
@@ -4284,7 +4259,6 @@ async function renderTodayMainPage() {
           ${renderCompare(selectedAnalysis, weekAgoData, '전주 대비', weekAgoStr.slice(5))}
           ${renderCompare(selectedAnalysis, yearAgoData, '전년 대비', yearAgoStr.slice(2).replace(/-/g, '.'))}
         </div>
-        ${hourChart}
       </div>`;
     sdBlock.style.display = '';
   } else {
