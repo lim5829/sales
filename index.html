@@ -1082,6 +1082,244 @@
     .cal-cell-amt { font-size: 12px; letter-spacing: -0.02em; font-weight: 500; }
   }
 
+  /* ---------- 메인 페이지 탭 ---------- */
+  .main-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--line);
+  }
+  .main-tab {
+    flex: 1;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-faint);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.2s;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .main-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .main-tab:hover:not(.active) { color: var(--ink); }
+
+  .main-panel { display: none; }
+  .main-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+  /* ---------- 오늘 페이지 (메인) ---------- */
+  .today-page {}
+
+  .today-top-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .today-page-date {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .today-page-date em { font-style: italic; color: var(--accent); }
+  .today-page-dow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 3px;
+  }
+
+  /* 연도별 비교 바 차트 */
+  .year-bar-chart {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(26,23,20,0.04);
+  }
+  .year-bar-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .year-bar-rows { display: flex; flex-direction: column; gap: 10px; }
+  .year-bar-row { display: flex; align-items: center; gap: 10px; }
+  .year-bar-label {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    color: var(--ink-dim);
+    min-width: 36px;
+    font-style: italic;
+  }
+  .year-bar-label.current { color: var(--accent); font-weight: 500; }
+  .year-bar-track {
+    flex: 1;
+    height: 24px;
+    background: var(--bg-soft);
+    border-radius: 3px;
+    overflow: hidden;
+    position: relative;
+  }
+  .year-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-bright), var(--accent));
+    border-radius: 3px;
+    transition: width 0.7s cubic-bezier(0.22,1,0.36,1);
+    display: flex;
+    align-items: center;
+    padding-right: 8px;
+    justify-content: flex-end;
+    min-width: 4px;
+  }
+  .year-bar-fill.muted {
+    background: linear-gradient(90deg, #d4c4b0, #b8a898);
+  }
+  .year-bar-fill.no-data {
+    background: var(--line);
+    min-width: 0;
+  }
+  .year-bar-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    min-width: 64px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .year-bar-val.current { color: var(--accent); font-weight: 700; }
+
+  /* 오늘 카드 (메인 페이지용) */
+  .today-main-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 3px rgba(26,23,20,0.03);
+  }
+  .today-main-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .today-main-year {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-style: italic;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  .today-main-date-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    margin-top: 2px;
+    letter-spacing: 0.05em;
+  }
+  .today-main-weather {
+    font-size: 28px;
+    line-height: 1;
+  }
+  .today-main-weather-temp {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-align: right;
+    margin-top: 2px;
+  }
+  .today-main-revenue {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    line-height: 1.1;
+  }
+  .today-main-revenue .unit { font-size: 15px; color: var(--ink-dim); margin-left: 3px; }
+  .today-main-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .today-main-stat {
+    background: var(--bg-soft);
+    border-radius: 3px;
+    padding: 8px 10px;
+  }
+  .today-main-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .today-main-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .today-main-menus { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .today-main-menus-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .today-main-menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .today-main-menu-item:last-child { border-bottom: none; }
+  .today-main-menu-left { display: flex; align-items: center; gap: 8px; }
+  .today-main-menu-rank {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--accent);
+    min-width: 18px;
+  }
+  .today-main-menu-name { color: var(--ink); }
+  .today-main-menu-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .today-nodata-card {
+    background: var(--bg-soft);
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+  }
+
   /* ---------- 오늘 리포트 모달 ---------- */
   .today-header {
     text-align: center;
@@ -1593,8 +1831,38 @@
     </button>
   </div>
 
-  <!-- 대시보드 -->
+  <!-- 메인 콘텐츠 (탭) -->
   <div class="dashboard" id="dashboard">
+    <div class="main-tabs">
+      <button class="main-tab active" data-main="today">오늘</button>
+      <button class="main-tab" data-main="analytics">분석</button>
+    </div>
+
+    <!-- ===== 오늘 탭 ===== -->
+    <div class="main-panel active" id="main-today">
+      <div class="today-page">
+        <div class="today-top-info">
+          <div>
+            <div class="today-page-date" id="mainTodayDate">—</div>
+            <div class="today-page-dow" id="mainTodayDow">—</div>
+          </div>
+        </div>
+        <!-- 연도별 바 차트 -->
+        <div class="year-bar-chart" id="yearBarChart">
+          <div class="year-bar-title">같은 요일 연도별 매출 비교</div>
+          <div class="year-bar-rows" id="yearBarRows">
+            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
+          </div>
+        </div>
+        <!-- 연도별 카드 -->
+        <div id="todayMainCards">
+          <div class="today-loading"><span class="spinner"></span>분석 중…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 분석 탭 ===== -->
+    <div class="main-panel" id="main-analytics">
     <!-- 기간 선택 -->
     <div class="period-bar">
       <div>
@@ -1736,7 +2004,8 @@
         </div>
       </div>
     </div>
-  </div>
+    </div> <!-- /main-analytics -->
+  </div> <!-- /dashboard -->
 
   <footer>Offline First &middot; Data stays on your device</footer>
 </div>
@@ -2494,6 +2763,8 @@ async function refreshAll() {
     $('dataBadge').classList.remove('show');
     rebuildPeriodChips();
     renderDashboard();
+    // 오늘 탭 렌더링 (날씨 비동기)
+    renderTodayMainPage().catch(e => console.warn('today render:', e));
   }
 }
 
@@ -3619,22 +3890,140 @@ function analyzeDayRecords(date) {
     .sort();
   const firstOrder = times.length > 0 ? times[0].slice(0, 5) : null;
 
-  // 탑3 메뉴 (desc 필드 기반)
+  // 탑5 메뉴
   const menuCount = {};
   dayRecs.forEach(r => {
     if (!r.desc || r.desc === '월별 수기입력' || r.desc === '일별 수기입력') return;
-    // "아메리카노 외 2건" → "아메리카노" 추출
     const name = r.desc.replace(/\s*외\s*\d+건?/, '').trim();
     if (!name) return;
     menuCount[name] = (menuCount[name] || 0) + r.amount;
   });
 
-  const top3 = Object.entries(menuCount)
+  const top5 = Object.entries(menuCount)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
+    .slice(0, 5)
     .map(([name, amt]) => ({ name, amt }));
 
-  return { revenue, count, avgTx, firstOrder, top3 };
+  return { revenue, count, avgTx, firstOrder, top5 };
+}
+
+// 오늘 탭 메인 페이지 렌더링
+async function renderTodayMainPage() {
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const dow = today.getDay();
+
+  // 헤더
+  $('mainTodayDate').innerHTML = `<em>${todayStr}</em>`;
+  $('mainTodayDow').textContent = `${DOW_KO[dow]}요일 · ${DOW_EN[dow]}`;
+
+  if (allRecords.length === 0) {
+    $('yearBarRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;font-family:JetBrains Mono,monospace;">데이터 없음</div>';
+    $('todayMainCards').innerHTML = '';
+    return;
+  }
+
+  const currentYear = today.getFullYear();
+  const years = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].sort().reverse();
+  const pastYears = years.filter(y => parseInt(y) < currentYear);
+
+  // 각 연도의 같은 요일 날짜 & 분석
+  const yearData = [];
+  for (const y of [String(currentYear), ...pastYears]) {
+    const yearsBack = currentYear - parseInt(y);
+    const targetDate = yearsBack === 0 ? todayStr : getSameDayOfWeek(todayStr, yearsBack);
+    const analysis = analyzeDayRecords(targetDate);
+    yearData.push({ year: y, yearsBack, targetDate, analysis });
+  }
+
+  // ─── 연도별 바 차트 ───
+  const maxRev = Math.max(...yearData.map(d => d.analysis?.revenue || 0), 1);
+
+  $('yearBarRows').innerHTML = yearData.map(d => {
+    const rev = d.analysis?.revenue || 0;
+    const pct = (rev / maxRev * 100).toFixed(1);
+    const isCurrent = d.yearsBack === 0;
+    const label = isCurrent ? '오늘' : `${d.year}`;
+    const valText = rev > 0 ? formatCurrency(rev) + '원' : '데이터 없음';
+    const fillClass = isCurrent ? '' : (rev > 0 ? 'muted' : 'no-data');
+    return `
+      <div class="year-bar-row">
+        <div class="year-bar-label ${isCurrent ? 'current' : ''}">${label}</div>
+        <div class="year-bar-track">
+          <div class="year-bar-fill ${fillClass}" style="width:${pct}%"></div>
+        </div>
+        <div class="year-bar-val ${isCurrent ? 'current' : ''}">${valText}</div>
+      </div>`;
+  }).join('');
+
+  // ─── 연도별 카드 (과거만) ───
+  const pastData = yearData.filter(d => d.yearsBack > 0);
+
+  // 날씨 병렬 fetch
+  const weatherResults = await Promise.all(
+    pastData.map(d => fetchWeather(d.targetDate))
+  );
+
+  const RANK = ['①','②','③','④','⑤'];
+
+  $('todayMainCards').innerHTML = pastData.map((d, idx) => {
+    const { year, yearsBack, targetDate, analysis } = d;
+    const weather = weatherResults[idx];
+    const targetDow = new Date(targetDate).getDay();
+
+    if (!analysis) {
+      return `
+        <div class="today-nodata-card">
+          <strong style="color:var(--ink-dim)">${year}년</strong> &nbsp;·&nbsp; ${targetDate} (${DOW_KO[targetDow]}) &nbsp;·&nbsp; 데이터 없음
+        </div>`;
+    }
+
+    const weatherBlock = weather.icon !== '—' ? `
+      <div style="text-align:right;">
+        <div class="today-main-weather">${weather.icon}</div>
+        ${weather.tmax != null ? `<div class="today-main-weather-temp">${weather.tmax}° / ${weather.tmin}°</div>` : ''}
+      </div>` : '';
+
+    const menusBlock = analysis.top5.length > 0 ? `
+      <div class="today-main-menus">
+        <div class="today-main-menus-label">탑 메뉴</div>
+        ${analysis.top5.map((m, i) => `
+          <div class="today-main-menu-item">
+            <div class="today-main-menu-left">
+              <span class="today-main-menu-rank">${RANK[i]}</span>
+              <span class="today-main-menu-name">${escapeHtml(m.name)}</span>
+            </div>
+            <span class="today-main-menu-amt">${m.amt.toLocaleString()}원</span>
+          </div>`).join('')}
+      </div>` : '';
+
+    return `
+      <div class="today-main-card">
+        <div class="today-main-card-header">
+          <div>
+            <div class="today-main-year">${year}년 · ${yearsBack}년 전</div>
+            <div class="today-main-date-label">${targetDate} (${DOW_KO[targetDow]})</div>
+          </div>
+          ${weatherBlock}
+        </div>
+        <div class="today-main-revenue">${analysis.revenue.toLocaleString()}<span class="unit">원</span></div>
+        <div class="today-main-stats">
+          <div class="today-main-stat">
+            <div class="today-main-stat-label">주문수</div>
+            <div class="today-main-stat-value">${analysis.count}건</div>
+          </div>
+          <div class="today-main-stat">
+            <div class="today-main-stat-label">건단가</div>
+            <div class="today-main-stat-value">${analysis.avgTx.toLocaleString()}</div>
+          </div>
+          <div class="today-main-stat">
+            <div class="today-main-stat-label">첫 주문</div>
+            <div class="today-main-stat-value">${analysis.firstOrder || '—'}</div>
+          </div>
+        </div>
+        ${menusBlock}
+      </div>`;
+  }).join('') || '<div class="today-nodata-card">과거 데이터가 없습니다</div>';
 }
 
 async function openTodayModal() {
@@ -3693,13 +4082,13 @@ async function openTodayModal() {
         </div>`;
     }
 
-    const top3Html = analysis.top3.length > 0
+    const top5Html = analysis.top5.length > 0
       ? `<div class="today-menus">
           <div class="today-menus-label">탑 메뉴</div>
-          ${analysis.top3.map((m, i) => `
+          ${analysis.top5.map((m, i) => `
             <div class="today-menu-item">
               <div style="display:flex; align-items:center;">
-                <span class="today-menu-rank">${['①','②','③'][i]}</span>
+                <span class="today-menu-rank">${['①','②','③','④','⑤'][i]}</span>
                 <span class="today-menu-name">${escapeHtml(m.name)}</span>
               </div>
               <span class="today-menu-amt">${m.amt.toLocaleString()}원</span>
@@ -3732,7 +4121,7 @@ async function openTodayModal() {
             <div class="today-stat-value">${analysis.firstOrder || '—'}</div>
           </div>
         </div>
-        ${top3Html}
+        ${top5Html}
       </div>`;
   }).join('');
 
@@ -3751,6 +4140,18 @@ function setupEvents() {
   $('btnToday').addEventListener('click', () => {
     if (allRecords.length === 0) { toast('데이터가 없습니다', 'error'); return; }
     openTodayModal();
+  });
+
+  // 메인 탭 전환
+  document.querySelectorAll('.main-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.main-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('main-' + tab.dataset.main).classList.add('active');
+      // 분석 탭 활성화 시 대시보드 렌더
+      if (tab.dataset.main === 'analytics') renderDashboard();
+    });
   });
 
   $('btnData').addEventListener('click', async () => {
