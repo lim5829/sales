@@ -1208,25 +1208,21 @@
     <!-- 비교 위젯 그리드 -->
     <div class="compare-grid">
       <!-- 위젯 1: vs 전년 동기 -->
-      <div class="widget">
+      <div class="widget" style="display:none">
         <div class="widget-header">
           <div class="widget-title">전년 동기 대비</div>
           <div class="widget-subtitle">YoY</div>
         </div>
-        <div id="vsYearBlock">
-          <div class="file-empty">데이터 부족</div>
-        </div>
+        <div id="vsYearBlock"></div>
       </div>
 
       <!-- 위젯 2: vs 전월 -->
-      <div class="widget">
+      <div class="widget" style="display:none">
         <div class="widget-header">
           <div class="widget-title">전월 대비</div>
           <div class="widget-subtitle">MoM</div>
         </div>
-        <div id="vsMonthBlock">
-          <div class="file-empty">데이터 부족</div>
-        </div>
+        <div id="vsMonthBlock"></div>
       </div>
 
       <!-- 위젯 3: 월별 추이 (넓게) -->
@@ -2059,17 +2055,19 @@ function renderKpiHero(records) {
 
 // --- 전년 동기 비교 ---
 function renderVsYear() {
-  // 전체 기간을 볼 때는 YoY 비교가 의미 없음 → 위젯 숨김
   const widget = $('vsYearBlock').closest('.widget');
+
+  // 전체 기간을 볼 때는 YoY 비교가 의미 없음 → 위젯 숨김
   if (currentPeriod === 'all') {
     if (widget) widget.style.display = 'none';
     return;
   }
-  if (widget) widget.style.display = '';
 
-  // 현재 기간과 같은 길이의 작년 데이터와 비교
   const records = filterByPeriod(allRecords, currentPeriod);
-  if (records.length === 0) { $('vsYearBlock').innerHTML = '<div class="file-empty">데이터 부족</div>'; return; }
+  if (records.length === 0) {
+    if (widget) widget.style.display = 'none';
+    return;
+  }
 
   const firstDate = records[0].date;
   const lastDate = records[records.length - 1].date;
@@ -2082,9 +2080,12 @@ function renderVsYear() {
   const prevRecords = allRecords.filter(r => r.date >= prevFirst && r.date <= prevLast);
 
   if (prevRecords.length === 0) {
-    $('vsYearBlock').innerHTML = '<div class="file-empty">전년 동기 데이터 없음</div>';
+    if (widget) widget.style.display = 'none';
     return;
   }
+
+  // 비교 가능 → 위젯 표시
+  if (widget) widget.style.display = '';
 
   const currRev = records.reduce((s, r) => s + r.amount, 0);
   const prevRev = prevRecords.reduce((s, r) => s + r.amount, 0);
@@ -2118,7 +2119,12 @@ function renderVsYear() {
 
 // --- 전월 대비 ---
 function renderVsMonth() {
-  if (allRecords.length === 0) { $('vsMonthBlock').innerHTML = '<div class="file-empty">데이터 부족</div>'; return; }
+  const widget = $('vsMonthBlock').closest('.widget');
+
+  if (allRecords.length === 0) {
+    if (widget) widget.style.display = 'none';
+    return;
+  }
 
   // 월별 집계
   const byMonth = {};
@@ -2130,9 +2136,11 @@ function renderVsMonth() {
 
   const months = Object.keys(byMonth).sort();
   if (months.length < 2) {
-    $('vsMonthBlock').innerHTML = '<div class="file-empty">전월 데이터 부족</div>';
+    if (widget) widget.style.display = 'none';
     return;
   }
+
+  if (widget) widget.style.display = '';
 
   const currMonth = months[months.length - 1];
   const prevMonth = months[months.length - 2];
@@ -2474,12 +2482,16 @@ function renderYearly() {
     const prev = i > 0 ? byYear[years[i-1]] : null;
     const dailyAvg = byYear[y].totalDays > 0 ? byYear[y].revenue / byYear[y].totalDays : 0;
     const countDisplay = byYear[y].posCount > 0 ? byYear[y].posCount.toLocaleString() : '—';
+    // 전년 데이터가 있을 때만 YoY 표시
+    const yoyCell = (prev && prev.revenue > 0)
+      ? deltaHtml(byYear[y].revenue, prev.revenue)
+      : '';
     return `<tr>
       <td>${y}</td>
       <td class="num">${formatFull(byYear[y].revenue)}</td>
       <td class="num">${countDisplay}</td>
       <td class="num">${formatFull(Math.round(dailyAvg))}</td>
-      <td class="num">${prev ? deltaHtml(byYear[y].revenue, prev.revenue) : '<span class="delta flat">—</span>'}</td>
+      <td class="num">${yoyCell}</td>
     </tr>`;
   }).join('');
 
@@ -2511,7 +2523,12 @@ function renderYoyTable() {
     if (years.length >= 2) {
       const last = vals[vals.length - 1];
       const prev = vals[vals.length - 2];
-      tbody += `<td class="num">${deltaHtml(last, prev)}</td>`;
+      // 양쪽 다 데이터가 있을 때만 YoY 표시
+      if (last != null && prev != null && prev > 0) {
+        tbody += `<td class="num">${deltaHtml(last, prev)}</td>`;
+      } else {
+        tbody += `<td class="num"></td>`;
+      }
     }
     tbody += '</tr>';
   }
