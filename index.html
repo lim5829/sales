@@ -917,10 +917,10 @@
   }
 
   .cal-cell {
-    aspect-ratio: 1 / 1.05;
+    aspect-ratio: 1 / 1.15;
     background: var(--bg-soft);
     border-radius: 2px;
-    padding: 4px 5px;
+    padding: 3px 4px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -928,7 +928,7 @@
     transition: transform 0.1s;
     position: relative;
     overflow: hidden;
-    min-height: 48px;
+    min-height: 58px;
   }
 
   .cal-cell.empty {
@@ -968,10 +968,12 @@
     font-size: 10px;
     color: var(--ink);
     line-height: 1.1;
-    font-weight: 500;
+    font-weight: 600;
     text-align: right;
-    word-break: break-all;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.06em;
+    word-break: break-all;
+    overflow: hidden;
   }
 
   /* 매출 수준에 따른 배경색 강도 */
@@ -1037,9 +1039,9 @@
   .cal-detail-close:hover { color: var(--ink); }
 
   @media (min-width: 640px) {
-    .cal-cell { min-height: 64px; }
-    .cal-cell-day { font-size: 11px; }
-    .cal-cell-amt { font-size: 11px; }
+    .cal-cell { min-height: 80px; padding: 6px 8px; }
+    .cal-cell-day { font-size: 12px; }
+    .cal-cell-amt { font-size: 12px; letter-spacing: -0.02em; font-weight: 500; }
   }
 
   /* ---------- 잠금 화면 ---------- */
@@ -1415,9 +1417,9 @@
       </div>
       <div class="period-select" id="periodSelect">
         <button class="period-chip active" data-period="all">전체</button>
-        <button class="period-chip" data-period="ytd">올해</button>
         <button class="period-chip" data-period="mtd">이번달</button>
         <button class="period-chip" data-period="last30">최근30일</button>
+        <!-- 연도별 칩은 JS에서 추가됨 -->
       </div>
     </div>
 
@@ -2189,6 +2191,7 @@ async function refreshAll() {
     $('emptyState').style.display = 'none';
     $('dashboard').classList.add('show');
     $('dataBadge').classList.remove('show');
+    rebuildPeriodChips();
     renderDashboard();
   }
 }
@@ -2196,6 +2199,12 @@ async function refreshAll() {
 function filterByPeriod(records, period) {
   if (records.length === 0) return records;
   if (period === 'all') return records;
+
+  // 'year:2022' 같은 연도 필터
+  if (period.startsWith('year:')) {
+    const y = period.slice(5);
+    return records.filter(r => r.date.startsWith(y));
+  }
 
   const lastDate = records[records.length - 1].date;
   const [ly, lm, ld] = lastDate.split('-').map(Number);
@@ -2210,6 +2219,35 @@ function filterByPeriod(records, period) {
   }
   if (!cutoff) return records;
   return records.filter(r => r.date >= cutoff);
+}
+
+// 데이터의 연도들로 기간 선택 칩 생성
+function rebuildPeriodChips() {
+  const select = $('periodSelect');
+  // 기존 동적 칩 제거
+  select.querySelectorAll('[data-dynamic="1"]').forEach(el => el.remove());
+
+  if (allRecords.length === 0) return;
+
+  const years = new Set();
+  allRecords.forEach(r => years.add(r.date.slice(0, 4)));
+  // 최신 연도가 먼저 오도록 역순 정렬
+  const sortedYears = Array.from(years).sort().reverse();
+
+  sortedYears.forEach(y => {
+    const btn = document.createElement('button');
+    btn.className = 'period-chip';
+    btn.dataset.period = `year:${y}`;
+    btn.dataset.dynamic = '1';
+    btn.textContent = y;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      currentPeriod = btn.dataset.period;
+      renderDashboard();
+    });
+    select.appendChild(btn);
+  });
 }
 
 // ---------- 대시보드 렌더링 ----------
@@ -2320,15 +2358,28 @@ function renderVsYear() {
     return;
   }
 
-  const firstDate = records[0].date;
-  const lastDate = records[records.length - 1].date;
+  // 연도 선택인 경우 (year:YYYY) → 해당 연도 vs 전년
+  let prevRecords, currLabel, prevLabel;
+  if (currentPeriod.startsWith('year:')) {
+    const curYear = parseInt(currentPeriod.slice(5));
+    const prevYear = curYear - 1;
+    prevRecords = allRecords.filter(r => r.date.startsWith(String(prevYear)));
+    currLabel = String(curYear);
+    prevLabel = String(prevYear);
+  } else {
+    // 기간 기반 (올해/이번달/최근30일)
+    const firstDate = records[0].date;
+    const lastDate = records[records.length - 1].date;
 
-  const [fy, fm, fd] = firstDate.split('-').map(Number);
-  const [ly, lm, ld] = lastDate.split('-').map(Number);
-  const prevFirst = `${fy-1}-${String(fm).padStart(2,'0')}-${String(fd).padStart(2,'0')}`;
-  const prevLast = `${ly-1}-${String(lm).padStart(2,'0')}-${String(ld).padStart(2,'0')}`;
+    const [fy, fm, fd] = firstDate.split('-').map(Number);
+    const [ly, lm, ld] = lastDate.split('-').map(Number);
+    const prevFirst = `${fy-1}-${String(fm).padStart(2,'0')}-${String(fd).padStart(2,'0')}`;
+    const prevLast = `${ly-1}-${String(lm).padStart(2,'0')}-${String(ld).padStart(2,'0')}`;
 
-  const prevRecords = allRecords.filter(r => r.date >= prevFirst && r.date <= prevLast);
+    prevRecords = allRecords.filter(r => r.date >= prevFirst && r.date <= prevLast);
+    currLabel = `${fy}.${String(fm).padStart(2,'0')}–${String(lm).padStart(2,'0')}`;
+    prevLabel = `${fy-1}.${String(fm).padStart(2,'0')}–${String(lm).padStart(2,'0')}`;
+  }
 
   if (prevRecords.length === 0) {
     if (widget) widget.style.display = 'none';
@@ -2342,9 +2393,6 @@ function renderVsYear() {
   const prevRev = prevRecords.reduce((s, r) => s + r.amount, 0);
   const max = Math.max(currRev, prevRev);
   const diff = prevRev > 0 ? ((currRev - prevRev) / prevRev * 100) : 0;
-
-  const currLabel = `${fy}.${String(fm).padStart(2,'0')}–${String(lm).padStart(2,'0')}`;
-  const prevLabel = `${fy-1}.${String(fm).padStart(2,'0')}–${String(lm).padStart(2,'0')}`;
 
   $('vsYearBlock').innerHTML = `
     <table class="vs-table">
@@ -2805,7 +2853,7 @@ function renderCalendar() {
     if (dateStr === todayStr) cls.push('today');
 
     const amtHtml = showData && data.amount > 0
-      ? `<div class="cal-cell-amt">${formatCurrency(data.amount)}</div>`
+      ? `<div class="cal-cell-amt">${formatFull(data.amount)}</div>`
       : '';
 
     const dataAttr = showData && data.amount > 0
