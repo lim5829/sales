@@ -244,6 +244,44 @@
     font-weight: 700;
   }
 
+  /* 연도 콤보박스 */
+  .year-select-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .year-select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 6px 24px 6px 10px;
+    background: transparent;
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+    outline: none;
+  }
+  .year-select.active {
+    background: var(--card);
+    color: var(--accent);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    font-weight: 700;
+  }
+  .year-select-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 10px;
+    color: var(--ink-faint);
+  }
+  .year-select-wrap.active::after { color: var(--accent); }
+
   /* KPI 헤드라인 */
   .kpi-hero {
     display: grid;
@@ -1350,31 +1388,29 @@
 </head>
 <body class="grain">
 
-<!-- 잠금 화면 -->
+<!-- Firebase 로그인 화면 -->
 <div class="lock-screen" id="lockScreen">
   <div class="lock-box">
     <div class="lock-brand">매출 저널</div>
     <div class="lock-sub">Sales Journal</div>
 
-    <svg class="lock-icon" id="lockIconSvg" viewBox="0 0 24 24">
-      <rect x="5" y="11" width="14" height="10" rx="1.5"/>
-      <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
-      <circle cx="12" cy="16" r="0.8" fill="currentColor" stroke="none"/>
+    <svg class="lock-icon" viewBox="0 0 24 24">
+      <path d="M12 2C8.13 2 5 5.13 5 9v2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V9c0-3.87-3.13-7-7-7zm0 2a5 5 0 0 1 5 5v2H7V9a5 5 0 0 1 5-5zm0 9a2 2 0 1 1 0 4 2 2 0 0 1 0-4z" fill="currentColor" stroke="none"/>
     </svg>
 
-    <div class="lock-title" id="lockTitle">비밀번호 입력</div>
-    <div class="lock-msg" id="lockMsg">비밀번호를 입력해 주세요.</div>
+    <div class="lock-title" id="lockTitle">로그인</div>
+    <div class="lock-msg" id="lockMsg">이메일과 비밀번호를 입력하세요.</div>
 
-    <input type="password" id="lockInput" class="lock-input" placeholder="••••••••" autocomplete="off" inputmode="text">
-    <input type="password" id="lockInput2" class="lock-input" placeholder="••••••••  (확인)" autocomplete="off" inputmode="text" style="display:none;">
+    <input type="email" id="lockEmail" class="lock-input" placeholder="이메일" autocomplete="email" inputmode="email">
+    <input type="password" id="lockInput" class="lock-input" placeholder="비밀번호 (6자 이상)" autocomplete="current-password">
+    <input type="password" id="lockInput2" class="lock-input" placeholder="비밀번호 확인" autocomplete="new-password" style="display:none;">
 
-    <button class="lock-btn" id="lockBtn">확인</button>
+    <button class="lock-btn" id="lockBtn">로그인</button>
 
     <div class="lock-error" id="lockError"></div>
 
-    <div class="lock-hint" id="lockHint">※ 최소 4자 이상</div>
-
-    <button class="lock-reset" id="lockReset" style="display:none;">비밀번호를 잊으셨나요?</button>
+    <button class="lock-reset" id="lockToggleMode" style="display:block; margin-top:16px;">계정이 없으신가요? 회원가입</button>
+    <button class="lock-reset" id="lockForgot" style="display:block; margin-top:8px;">비밀번호를 잊으셨나요?</button>
   </div>
 </div>
 
@@ -1419,7 +1455,11 @@
         <button class="period-chip active" data-period="all">전체</button>
         <button class="period-chip" data-period="mtd">이번달</button>
         <button class="period-chip" data-period="last30">최근30일</button>
-        <!-- 연도별 칩은 JS에서 추가됨 -->
+        <span class="year-select-wrap" id="yearSelectWrap">
+          <select class="year-select" id="yearSelect">
+            <option value="">연도</option>
+          </select>
+        </span>
       </div>
     </div>
 
@@ -1673,16 +1713,57 @@
     </div>
 
     <div class="modal-section">
-      <div class="modal-section-title">🔐 보안</div>
-      <button class="btn-outline" id="btnChangePw">비밀번호 변경</button>
-      <button class="btn-outline" id="btnRemovePw">비밀번호 해제</button>
-      <button class="btn-outline" id="btnLogout">로그아웃 (이 기기에서만)</button>
+      <div class="modal-section-title">🔐 계정</div>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--ink-dim); padding:8px 0;" id="currentUserEmail">—</div>
+      <button class="btn-outline" id="btnLogout">로그아웃</button>
     </div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<script type="module">
+// ============================================================
+// Firebase 초기화
+// ============================================================
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, sendPasswordResetEmail
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore, collection, doc, setDoc, getDoc, getDocs,
+  deleteDoc, writeBatch, query, orderBy, onSnapshot
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC5BI9yV1wKKSO8CI0T3FAR1Fme7U6jkYw",
+  authDomain: "sales-journal-3d445.firebaseapp.com",
+  projectId: "sales-journal-3d445",
+  storageBucket: "sales-journal-3d445.firebasestorage.app",
+  messagingSenderId: "234473363733",
+  appId: "1:234473363733:web:206b83f34f7dbdb47d311c"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const firestore = getFirestore(firebaseApp);
+
+// 전역으로 노출 (기존 코드와 연결)
+window._fbAuth = auth;
+window._fbFirestore = firestore;
+window._fbFns = {
+  createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, sendPasswordResetEmail, onAuthStateChanged,
+  collection, doc, setDoc, getDoc, getDocs,
+  deleteDoc, writeBatch, query, orderBy, onSnapshot
+};
+
+// xlsx 로드 후 앱 초기화
+window.addEventListener('load', () => {
+  if (window._appReady) window._appReady();
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -1709,91 +1790,110 @@ async function hash(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('').slice(0, 16);
 }
 
-// ---------- IndexedDB ----------
-const DB_NAME = 'pos_analyzer', DB_VERSION = 1;
-let db = null;
+// ---------- Firestore DB 레이어 ----------
+// 기존 IndexedDB 함수들을 Firestore로 대체
+// uid는 로그인 후 currentUser.uid
+let _uid = null;
 
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => { db = req.result; resolve(db); };
-    req.onupgradeneeded = e => {
-      const d = e.target.result;
-      if (!d.objectStoreNames.contains('records')) {
-        const store = d.createObjectStore('records', { keyPath: 'id' });
-        store.createIndex('date', 'date');
-        store.createIndex('file', 'file');
-      }
-      if (!d.objectStoreNames.contains('files')) d.createObjectStore('files', { keyPath: 'name' });
-      if (!d.objectStoreNames.contains('settings')) d.createObjectStore('settings', { keyPath: 'key' });
-    };
-  });
+function userCol(name) {
+  const { collection, doc } = window._fbFns;
+  const db = window._fbFirestore;
+  return collection(db, 'users', _uid, name);
 }
 
-const tx = (s, m='readonly') => db.transaction(s, m).objectStore(s);
+function userDoc(colName, id) {
+  const { doc } = window._fbFns;
+  const db = window._fbFirestore;
+  return doc(db, 'users', _uid, colName, id);
+}
 
 async function dbPut(store, item) {
-  return new Promise((res, rej) => {
-    const r = tx(store, 'readwrite').put(item);
-    r.onsuccess = () => res(); r.onerror = () => rej(r.error);
-  });
+  const id = item.id || item.key || item.name;
+  if (!id) return;
+  await window._fbFns.setDoc(userDoc(store, String(id)), item);
 }
 
 async function dbBulkPut(store, items) {
-  return new Promise(res => {
-    if (items.length === 0) return res({ added: 0, skipped: 0 });
-    const t = db.transaction(store, 'readwrite').objectStore(store);
-    let added = 0, skipped = 0, pending = items.length;
-    items.forEach(item => {
-      const r = t.add(item);
-      r.onsuccess = () => { added++; if (--pending === 0) res({ added, skipped }); };
-      r.onerror = () => { skipped++; if (--pending === 0) res({ added, skipped }); };
+  if (items.length === 0) return { added: 0, skipped: 0 };
+  const db = window._fbFirestore;
+  const { writeBatch, doc, getDoc } = window._fbFns;
+
+  let added = 0, skipped = 0;
+  // 배치 단위 500개 처리
+  const chunks = [];
+  for (let i = 0; i < items.length; i += 400) {
+    chunks.push(items.slice(i, i + 400));
+  }
+
+  for (const chunk of chunks) {
+    // 기존 ID 존재 여부 확인
+    const existChecks = await Promise.all(
+      chunk.map(item => getDoc(doc(db, 'users', _uid, store, String(item.id || item.key || item.name))))
+    );
+
+    const batch = writeBatch(db);
+    chunk.forEach((item, i) => {
+      if (existChecks[i].exists()) {
+        skipped++;
+      } else {
+        const id = String(item.id || item.key || item.name);
+        batch.set(doc(db, 'users', _uid, store, id), item);
+        added++;
+      }
     });
-  });
+    await batch.commit();
+  }
+
+  return { added, skipped };
 }
 
 async function dbGetAll(store) {
-  return new Promise((res, rej) => {
-    const r = tx(store).getAll();
-    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-  });
+  const { getDocs } = window._fbFns;
+  const snap = await getDocs(userCol(store));
+  return snap.docs.map(d => d.data());
 }
 
 async function dbGet(store, key) {
-  return new Promise((res, rej) => {
-    const r = tx(store).get(key);
-    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
-  });
+  const { getDoc } = window._fbFns;
+  const snap = await getDoc(userDoc(store, String(key)));
+  return snap.exists() ? snap.data() : null;
 }
 
 async function dbDelete(store, key) {
-  return new Promise((res, rej) => {
-    const r = tx(store, 'readwrite').delete(key);
-    r.onsuccess = () => res(); r.onerror = () => rej(r.error);
-  });
+  const { deleteDoc } = window._fbFns;
+  await deleteDoc(userDoc(store, String(key)));
 }
 
 async function dbDeleteByFile(fname) {
-  return new Promise((res, rej) => {
-    const t = db.transaction('records', 'readwrite').objectStore('records');
-    const idx = t.index('file');
-    let deleted = 0;
-    const r = idx.openCursor(IDBKeyRange.only(fname));
-    r.onsuccess = e => {
-      const cur = e.target.result;
-      if (cur) { cur.delete(); deleted++; cur.continue(); }
-      else res(deleted);
-    };
-    r.onerror = () => rej(r.error);
-  });
+  const all = await dbGetAll('records');
+  const toDelete = all.filter(r => r.file === fname);
+  if (toDelete.length === 0) return 0;
+
+  const db = window._fbFirestore;
+  const { writeBatch, doc } = window._fbFns;
+  const chunks = [];
+  for (let i = 0; i < toDelete.length; i += 400) chunks.push(toDelete.slice(i, i + 400));
+  for (const chunk of chunks) {
+    const batch = writeBatch(db);
+    chunk.forEach(r => batch.delete(doc(db, 'users', _uid, 'records', String(r.id))));
+    await batch.commit();
+  }
+  return toDelete.length;
 }
 
 async function dbClear(store) {
-  return new Promise((res, rej) => {
-    const r = tx(store, 'readwrite').clear();
-    r.onsuccess = () => res(); r.onerror = () => rej(r.error);
-  });
+  const all = await dbGetAll(store);
+  if (all.length === 0) return;
+  const db = window._fbFirestore;
+  const { writeBatch, doc } = window._fbFns;
+  const idKey = store === 'records' ? 'id' : (store === 'files' ? 'name' : 'key');
+  const chunks = [];
+  for (let i = 0; i < all.length; i += 400) chunks.push(all.slice(i, i + 400));
+  for (const chunk of chunks) {
+    const batch = writeBatch(db);
+    chunk.forEach(r => batch.delete(doc(db, 'users', _uid, store, String(r[idKey]))));
+    await batch.commit();
+  }
 }
 
 // ---------- 설정 ----------
@@ -2221,13 +2321,19 @@ function filterByPeriod(records, period) {
   return records.filter(r => r.date >= cutoff);
 }
 
-// 데이터의 연도들로 기간 선택 칩 생성
+// 데이터의 연도들로 기간 선택 콤보박스 채우기
 function rebuildPeriodChips() {
-  const select = $('periodSelect');
-  // 기존 동적 칩 제거
-  select.querySelectorAll('[data-dynamic="1"]').forEach(el => el.remove());
+  const select = $('yearSelect');
+  const wrap = $('yearSelectWrap');
 
-  if (allRecords.length === 0) return;
+  // 기존 연도 옵션 제거 (첫 placeholder 제외)
+  while (select.options.length > 1) select.remove(1);
+
+  if (allRecords.length === 0) {
+    wrap.style.display = 'none';
+    return;
+  }
+  wrap.style.display = 'inline-block';
 
   const years = new Set();
   allRecords.forEach(r => years.add(r.date.slice(0, 4)));
@@ -2235,19 +2341,22 @@ function rebuildPeriodChips() {
   const sortedYears = Array.from(years).sort().reverse();
 
   sortedYears.forEach(y => {
-    const btn = document.createElement('button');
-    btn.className = 'period-chip';
-    btn.dataset.period = `year:${y}`;
-    btn.dataset.dynamic = '1';
-    btn.textContent = y;
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
-      btn.classList.add('active');
-      currentPeriod = btn.dataset.period;
-      renderDashboard();
-    });
-    select.appendChild(btn);
+    const opt = document.createElement('option');
+    opt.value = `year:${y}`;
+    opt.textContent = `${y}년`;
+    select.appendChild(opt);
   });
+
+  // 현재 선택 상태 반영
+  if (currentPeriod.startsWith('year:')) {
+    select.value = currentPeriod;
+    wrap.classList.add('active');
+    select.classList.add('active');
+  } else {
+    select.value = '';
+    wrap.classList.remove('active');
+    select.classList.remove('active');
+  }
 }
 
 // ---------- 대시보드 렌더링 ----------
@@ -3088,226 +3197,94 @@ async function wipeAll() {
   await refreshAll();
 }
 
-// ---------- 인증 (비밀번호) ----------
-const SESSION_KEY = 'pos_session_unlock';
 
-async function hashPw(pw) {
-  const enc = new TextEncoder().encode(pw + '|salt_v1_sales_journal');
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-async function getStoredPwHash() {
-  const s = await dbGet('settings', 'pw_hash');
-  return s ? s.value : null;
-}
-
-async function setPwHash(pw) {
-  if (pw === null) {
-    await dbDelete('settings', 'pw_hash');
-  } else {
-    const h = await hashPw(pw);
-    await dbPut('settings', { key: 'pw_hash', value: h });
-  }
-}
-
-function isUnlocked() {
-  return localStorage.getItem(SESSION_KEY) === '1';
-}
-
-function setUnlocked(v) {
-  if (v) localStorage.setItem(SESSION_KEY, '1');
-  else localStorage.removeItem(SESSION_KEY);
-}
+// ---------- Firebase 인증 ----------
+let lockAuthMode = 'login';
 
 function showLock() { $('lockScreen').classList.add('show'); }
 function hideLock() { $('lockScreen').classList.remove('show'); }
 
-// 잠금 화면 모드: 'set' (처음 설정) / 'unlock' (로그인) / 'change' (변경)
-let lockMode = 'unlock';
-let lockStep = 1;
-let lockCurrentPw = '';
+function setLockError(msg) { $('lockError').textContent = msg; }
 
-function setLockUI(mode) {
-  lockMode = mode;
-  lockStep = 1;
-  lockCurrentPw = '';
-  const input1 = $('lockInput');
-  const input2 = $('lockInput2');
-  const error = $('lockError');
-  const reset = $('lockReset');
-
-  input1.value = '';
-  input2.value = '';
-  input1.classList.remove('error');
-  input2.classList.remove('error');
-  error.textContent = '';
-
-  if (mode === 'set') {
-    $('lockTitle').textContent = '비밀번호 설정';
-    $('lockMsg').textContent = '처음 오셨네요. 사용할 비밀번호를 설정해주세요.';
-    $('lockHint').textContent = '※ 최소 4자 이상 · 한번 설정하면 다음부터 로그인에 필요합니다';
-    input1.placeholder = '새 비밀번호';
-    input2.placeholder = '비밀번호 확인';
-    input2.style.display = 'block';
-    reset.style.display = 'none';
-  } else if (mode === 'change') {
-    $('lockTitle').textContent = '비밀번호 변경';
-    $('lockMsg').textContent = '현재 비밀번호를 먼저 입력해주세요.';
-    $('lockHint').textContent = '';
-    input1.placeholder = '현재 비밀번호';
-    input2.placeholder = '새 비밀번호';
-    input2.style.display = 'none';
-    reset.style.display = 'none';
-  } else {
-    $('lockTitle').textContent = '비밀번호 입력';
-    $('lockMsg').textContent = '비밀번호를 입력해 주세요.';
-    $('lockHint').textContent = '';
-    input1.placeholder = '••••••••';
-    input2.style.display = 'none';
-    reset.style.display = 'block';
-  }
-  input1.focus();
+function fbErrMsg(code) {
+  const map = {
+    'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
+    'auth/user-not-found': '등록되지 않은 이메일입니다.',
+    'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
+    'auth/invalid-credential': '이메일 또는 비밀번호가 틀렸습니다.',
+    'auth/email-already-in-use': '이미 사용 중인 이메일입니다.',
+    'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
+    'auth/too-many-requests': '시도가 너무 많습니다. 잠시 후 다시 시도하세요.',
+    'auth/network-request-failed': '네트워크 오류. 인터넷 연결을 확인하세요.',
+  };
+  return map[code] || `오류: ${code}`;
 }
 
-async function handleLockSubmit() {
-  const input1 = $('lockInput');
-  const input2 = $('lockInput2');
-  const error = $('lockError');
-  const pw = input1.value;
+async function doFirebaseAuth() {
+  const email = $('lockEmail').value.trim();
+  const pw = $('lockInput').value;
+  const pw2 = $('lockInput2').value;
+  const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = window._fbFns;
+  const auth = window._fbAuth;
 
-  error.textContent = '';
-  input1.classList.remove('error');
-  input2.classList.remove('error');
+  setLockError('');
+  $('lockBtn').disabled = true;
+  $('lockBtn').textContent = '처리 중…';
 
-  if (lockMode === 'set') {
-    if (pw.length < 4) {
-      input1.classList.add('error');
-      error.textContent = '4자 이상 입력해주세요';
-      return;
-    }
-    if (input2.value !== pw) {
-      input2.classList.add('error');
-      error.textContent = '비밀번호가 일치하지 않습니다';
-      return;
-    }
-    await setPwHash(pw);
-    setUnlocked(true);
-    hideLock();
-    toast('✓ 비밀번호가 설정되었습니다', 'success');
-  }
-
-  else if (lockMode === 'unlock') {
-    const stored = await getStoredPwHash();
-    const h = await hashPw(pw);
-    if (h === stored) {
-      setUnlocked(true);
-      hideLock();
-      toast('✓ 환영합니다', 'success');
+  try {
+    if (lockAuthMode === 'signup') {
+      if (pw.length < 6) { setLockError('비밀번호는 6자 이상이어야 합니다.'); return; }
+      if (pw !== pw2) { setLockError('비밀번호가 일치하지 않습니다.'); return; }
+      await createUserWithEmailAndPassword(auth, email, pw);
     } else {
-      input1.classList.add('error');
-      error.textContent = '비밀번호가 일치하지 않습니다';
-      input1.value = '';
-      input1.focus();
+      await signInWithEmailAndPassword(auth, email, pw);
     }
+  } catch (e) {
+    setLockError(fbErrMsg(e.code));
+  } finally {
+    $('lockBtn').disabled = false;
+    $('lockBtn').textContent = lockAuthMode === 'signup' ? '회원가입' : '로그인';
   }
-
-  else if (lockMode === 'change') {
-    if (lockStep === 1) {
-      // 현재 비밀번호 확인
-      const stored = await getStoredPwHash();
-      const h = await hashPw(pw);
-      if (h !== stored) {
-        input1.classList.add('error');
-        error.textContent = '현재 비밀번호가 일치하지 않습니다';
-        input1.value = '';
-        return;
-      }
-      // 다음 단계
-      lockStep = 2;
-      input1.value = '';
-      input1.placeholder = '새 비밀번호';
-      input2.value = '';
-      input2.placeholder = '새 비밀번호 확인';
-      input2.style.display = 'block';
-      $('lockMsg').textContent = '새로 사용할 비밀번호를 입력하세요.';
-      $('lockHint').textContent = '※ 최소 4자 이상';
-      input1.focus();
-    } else {
-      if (pw.length < 4) {
-        input1.classList.add('error');
-        error.textContent = '4자 이상 입력해주세요';
-        return;
-      }
-      if (input2.value !== pw) {
-        input2.classList.add('error');
-        error.textContent = '비밀번호가 일치하지 않습니다';
-        return;
-      }
-      await setPwHash(pw);
-      hideLock();
-      toast('✓ 비밀번호가 변경되었습니다', 'success');
-    }
-  }
-}
-
-async function initAuth() {
-  const stored = await getStoredPwHash();
-  if (!stored) {
-    // 비밀번호 미설정 → 그냥 진입
-    return true;
-  }
-  if (isUnlocked()) {
-    return true;
-  }
-  setLockUI('unlock');
-  showLock();
-  return false;
 }
 
 function setupAuthEvents() {
-  $('lockBtn').addEventListener('click', handleLockSubmit);
-  $('lockInput').addEventListener('keydown', e => { if (e.key === 'Enter') handleLockSubmit(); });
-  $('lockInput2').addEventListener('keydown', e => { if (e.key === 'Enter') handleLockSubmit(); });
+  $('lockBtn').addEventListener('click', doFirebaseAuth);
+  $('lockEmail').addEventListener('keydown', e => { if (e.key === 'Enter') $('lockInput').focus(); });
+  $('lockInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (lockAuthMode === 'signup') $('lockInput2').focus();
+      else doFirebaseAuth();
+    }
+  });
+  $('lockInput2').addEventListener('keydown', e => { if (e.key === 'Enter') doFirebaseAuth(); });
 
-  // 비밀번호 초기화 (모든 데이터 삭제)
-  $('lockReset').addEventListener('click', async () => {
-    const warn = '비밀번호를 초기화하려면 저장된 모든 데이터를 삭제해야 합니다.\n\n정말 진행할까요?';
-    if (!confirm(warn)) return;
-    if (!confirm('정말로 모든 데이터와 비밀번호를 초기화합니다. 되돌릴 수 없습니다.')) return;
-    await dbClear('records');
-    await dbClear('files');
-    await dbClear('settings');
-    setUnlocked(false);
-    localStorage.removeItem(SESSION_KEY);
-    location.reload();
+  $('lockToggleMode').addEventListener('click', () => {
+    lockAuthMode = lockAuthMode === 'login' ? 'signup' : 'login';
+    setLockError('');
+    $('lockInput2').style.display = lockAuthMode === 'signup' ? 'block' : 'none';
+    $('lockTitle').textContent = lockAuthMode === 'signup' ? '회원가입' : '로그인';
+    $('lockMsg').textContent = lockAuthMode === 'signup'
+      ? '사용할 이메일과 비밀번호를 입력하세요.'
+      : '이메일과 비밀번호를 입력하세요.';
+    $('lockBtn').textContent = lockAuthMode === 'signup' ? '회원가입' : '로그인';
+    $('lockToggleMode').textContent = lockAuthMode === 'signup'
+      ? '이미 계정이 있으신가요? 로그인'
+      : '계정이 없으신가요? 회원가입';
   });
 
-  // 설정 모달 내 버튼
-  $('btnChangePw').addEventListener('click', async () => {
-    closeModal('settingsModal');
-    setLockUI('change');
-    showLock();
-  });
-
-  $('btnRemovePw').addEventListener('click', async () => {
-    const pw = prompt('비밀번호 해제를 위해 현재 비밀번호를 입력하세요:');
-    if (!pw) return;
-    const stored = await getStoredPwHash();
-    const h = await hashPw(pw);
-    if (h !== stored) { toast('❌ 비밀번호가 일치하지 않습니다', 'error'); return; }
-    if (!confirm('비밀번호를 해제하면 누구나 이 페이지에 접근할 수 있습니다.\n계속할까요?')) return;
-    await setPwHash(null);
-    toast('✓ 비밀번호가 해제되었습니다', 'success');
+  $('lockForgot').addEventListener('click', async () => {
+    const email = $('lockEmail').value.trim();
+    if (!email) { setLockError('이메일을 먼저 입력하세요.'); return; }
+    try {
+      await window._fbFns.sendPasswordResetEmail(window._fbAuth, email);
+      toast('✓ 비밀번호 재설정 이메일을 보냈습니다', 'success');
+    } catch (e) { setLockError(fbErrMsg(e.code)); }
   });
 
   $('btnLogout').addEventListener('click', async () => {
-    const stored = await getStoredPwHash();
-    if (!stored) { toast('비밀번호가 설정되어 있지 않습니다', 'info'); return; }
-    setUnlocked(false);
+    if (!confirm('로그아웃 하시겠습니까?')) return;
     closeModal('settingsModal');
-    setLockUI('unlock');
-    showLock();
+    await window._fbFns.signOut(window._fbAuth);
   });
 }
 
@@ -3370,14 +3347,31 @@ function setupEvents() {
   $('settingHourStart').addEventListener('change', e => saveSetting('hourStart', parseInt(e.target.value) || 0));
   $('settingHourEnd').addEventListener('change', e => saveSetting('hourEnd', parseInt(e.target.value) || 24));
 
-  // 기간 선택
+  // 기간 선택 (칩)
   document.querySelectorAll('.period-chip').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
       currentPeriod = chip.dataset.period;
+      // 연도 콤보박스 초기화
+      const ys = $('yearSelect'), yw = $('yearSelectWrap');
+      if (ys) { ys.value = ''; ys.classList.remove('active'); }
+      if (yw) yw.classList.remove('active');
       renderDashboard();
     });
+  });
+
+  // 연도 콤보박스
+  $('yearSelect').addEventListener('change', e => {
+    const val = e.target.value;
+    if (!val) return;
+    // 모든 칩 비활성화
+    document.querySelectorAll('.period-chip').forEach(c => c.classList.remove('active'));
+    // 콤보박스 활성 스타일
+    $('yearSelect').classList.add('active');
+    $('yearSelectWrap').classList.add('active');
+    currentPeriod = val;
+    renderDashboard();
   });
 
   // 서브 탭
@@ -3392,35 +3386,42 @@ function setupEvents() {
 }
 
 // ---------- 초기화 ----------
-(async () => {
+window._appReady = async function() {
   try {
-    await openDB();
-    await loadSettings();
     setupAuthEvents();
     setupEvents();
 
-    const stored = await getStoredPwHash();
-
-    if (!stored) {
-      // 처음 방문 — 비밀번호 설정 화면 먼저
-      setLockUI('set');
-      showLock();
-      // 백그라운드에서 데이터도 준비
-      await refreshAll();
-    } else if (!isUnlocked()) {
-      // 비밀번호 설정됨 & 잠금 상태 — 로그인 화면
-      setLockUI('unlock');
-      showLock();
-      await refreshAll();
-    } else {
-      // 이미 로그인된 상태
-      await refreshAll();
-    }
+    // Firebase 인증 상태 감지 → 로그인/로그아웃 처리
+    window._fbFns.onAuthStateChanged(window._fbAuth, async (user) => {
+      if (user) {
+        _uid = user.uid;
+        hideLock();
+        const emailEl = $('currentUserEmail');
+        if (emailEl) emailEl.textContent = `로그인: ${user.email}`;
+        await loadSettings();
+        await refreshAll();
+      } else {
+        _uid = null;
+        allRecords = [];
+        $('emptyState').style.display = 'block';
+        $('dashboard').classList.remove('show');
+        showLock();
+      }
+    });
   } catch (err) {
     toast('초기화 실패: ' + err.message, 'error');
     console.error(err);
   }
-})();
+};
+
+// 모듈 + XLSX 로드 후 시작
+if (typeof XLSX !== 'undefined') {
+  setTimeout(() => window._appReady && window._appReady(), 100);
+} else {
+  window.addEventListener('load', () => {
+    setTimeout(() => window._appReady && window._appReady(), 300);
+  });
+}
 </script>
 </body>
 </html>
