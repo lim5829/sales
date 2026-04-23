@@ -1119,7 +1119,26 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
+    gap: 8px;
   }
+  .today-nav-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--ink-dim);
+    font-size: 20px;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .today-nav-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .today-nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
   .today-page-date {
     font-family: 'Fraunces', serif;
     font-size: 22px;
@@ -1309,14 +1328,68 @@
     color: var(--ink-dim);
     font-variant-numeric: tabular-nums;
   }
+  /* 오늘 탭 컴팩트 카드 */
+  .today-main-card {
+    display: grid;
+    grid-template-columns: 3.5rem 1fr auto auto;
+    align-items: center;
+    gap: 0 10px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--card);
+  }
+  .today-main-card:first-child { border-radius: 4px 4px 0 0; }
+  .today-main-card:last-child { border-radius: 0 0 4px 4px; border-bottom: none; }
+  .today-main-card:only-child { border-radius: 4px; border-bottom: none; }
+
+  .tmc-year {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+    line-height: 1.2;
+  }
+  .tmc-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-faint);
+    letter-spacing: 0.03em;
+  }
+  .tmc-revenue {
+    font-family: 'Fraunces', serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    text-align: right;
+    white-space: nowrap;
+  }
+  .tmc-revenue .u { font-size: 10px; color: var(--ink-faint); margin-left: 1px; }
+  .tmc-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    text-align: right;
+    white-space: nowrap;
+    line-height: 1.6;
+  }
+  .tmc-meta span { color: var(--ink-dim); }
+
   .today-nodata-card {
-    background: var(--bg-soft);
-    border-radius: 4px;
-    padding: 20px;
-    text-align: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    background: var(--card);
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
     color: var(--ink-faint);
+  }
+  .today-nodata-card:last-child { border-bottom: none; border-radius: 0 0 4px 4px; }
+
+  .today-cards-wrap {
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
     margin-bottom: 12px;
   }
 
@@ -1842,10 +1915,12 @@
     <div class="main-panel active" id="main-today">
       <div class="today-page">
         <div class="today-top-info">
-          <div>
+          <button class="today-nav-btn" id="todayNavPrev" title="이전 날">‹</button>
+          <div style="text-align:center;">
             <div class="today-page-date" id="mainTodayDate">—</div>
             <div class="today-page-dow" id="mainTodayDow">—</div>
           </div>
+          <button class="today-nav-btn" id="todayNavNext" title="다음 날">›</button>
         </div>
         <!-- 연도별 바 차트 -->
         <div class="year-bar-chart" id="yearBarChart">
@@ -1855,9 +1930,7 @@
           </div>
         </div>
         <!-- 연도별 카드 -->
-        <div id="todayMainCards">
-          <div class="today-loading"><span class="spinner"></span>분석 중…</div>
-        </div>
+        <div id="todayMainCards"></div>
       </div>
     </div>
 
@@ -3932,14 +4005,29 @@ function analyzeDayRecords(date) {
 }
 
 // 오늘 탭 메인 페이지 렌더링
-async function renderTodayMainPage() {
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  const dow = today.getDay();
+// 오늘 탭 기준 날짜 (화살표로 변경 가능)
+let todayPageDate = null; // null = 오늘
 
-  // 오늘 날짜/요일만 표시
+function getTodayPageDateStr() {
+  if (!todayPageDate) {
+    return new Date().toISOString().slice(0, 10);
+  }
+  return todayPageDate;
+}
+
+async function renderTodayMainPage() {
+  const todayStr = getTodayPageDateStr();
+  const baseDate = new Date(todayStr + 'T12:00:00');
+  const dow = baseDate.getDay();
+  const realToday = new Date().toISOString().slice(0, 10);
+  const isToday = todayStr === realToday;
+
+  // 헤더
   $('mainTodayDate').innerHTML = `<em>${todayStr}</em>`;
-  $('mainTodayDow').textContent = `${DOW_KO[dow]}요일`;
+  $('mainTodayDow').textContent = `${DOW_KO[dow]}요일${isToday ? ' · 오늘' : ''}`;
+
+  // 다음 날 버튼: 제한 없음 (과거 데이터만 보여주므로)
+  $('todayNavNext').disabled = false;
 
   // 바 차트 표시
   const chartEl = $('yearBarChart');
@@ -3953,11 +4041,10 @@ async function renderTodayMainPage() {
 
   $('todayMainCards').innerHTML = '<div class="today-loading"><span class="spinner"></span>분석 중…</div>';
 
-  const currentYear = today.getFullYear();
+  const currentYear = baseDate.getFullYear();
   const dataYears = [...new Set(allRecords.map(r => r.date.slice(0,4)))]
     .map(Number).filter(y => y < currentYear).sort().reverse();
 
-  // 각 연도별 같은 요일 날짜 & 분석
   const pastData = dataYears.map(y => {
     const yearsBack = currentYear - y;
     const targetDate = getSameDayOfWeek(todayStr, yearsBack);
@@ -3971,9 +4058,9 @@ async function renderTodayMainPage() {
     const rev = d.analysis?.revenue || 0;
     const pct = Math.max(rev / maxRev * 100, rev > 0 ? 2 : 0).toFixed(1);
     const valText = rev > 0 ? formatCurrency(rev) + '원' : '—';
-    const targetDow = new Date(d.targetDate + 'T12:00:00').getDay();
+    const tdow = new Date(d.targetDate + 'T12:00:00').getDay();
     return `
-      <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[targetDow]})">
+      <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[tdow]})">
         <div class="year-bar-label">${d.year}</div>
         <div class="year-bar-track">
           <div class="year-bar-fill ${rev > 0 ? 'muted' : 'no-data'}" style="width:${pct}%"></div>
@@ -3981,93 +4068,32 @@ async function renderTodayMainPage() {
         <div class="year-bar-val">${valText}</div>
       </div>`;
   }).join('') || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
-  const weatherResults = await Promise.all(
-    pastData.map(d => d.analysis ? fetchWeather(d.targetDate) : Promise.resolve({ icon: '—' }))
-  );
 
-  const RANK = ['①','②','③','④','⑤'];
-
-  $('todayMainCards').innerHTML = pastData.map((d, idx) => {
+  // ─── 카드 렌더 (컴팩트 1행) ───
+  const cards = pastData.map(d => {
     const { year, yearsBack, targetDate, analysis } = d;
-    const weather = weatherResults[idx];
-    const targetDow = new Date(targetDate + 'T12:00:00').getDay();
+    const tdow = new Date(targetDate + 'T12:00:00').getDay();
 
     if (!analysis) {
-      return `<div class="today-nodata-card">${yearsBack}년 전 <strong>${year}년</strong> · ${targetDate} (${DOW_KO[targetDow]}) · 데이터 없음</div>`;
+      return `<div class="today-nodata-card">${year}년 · ${targetDate} (${DOW_KO[tdow]}) · 데이터 없음</div>`;
     }
-
-    const weatherBlock = (weather && weather.icon !== '—') ? `
-      <div style="text-align:right">
-        <div class="today-main-weather">${weather.icon}</div>
-        ${weather.tmax != null ? `<div class="today-main-weather-temp">${weather.tmax}° / ${weather.tmin}°</div>` : ''}
-      </div>` : '';
-
-    const totalRev = analysis.revenue;
-    const cardPct  = totalRev > 0 ? Math.round((analysis.card||0) / totalRev * 100) : 0;
-    const cashPct  = totalRev > 0 ? Math.round((analysis.cash||0) / totalRev * 100) : 0;
-    const easyPct  = totalRev > 0 ? Math.round((analysis.easy||0) / totalRev * 100) : 0;
-
-    const payInline = [
-      cardPct > 0 ? `💳${cardPct}%` : '',
-      cashPct > 0 ? `💵${cashPct}%` : '',
-      easyPct > 0 ? `📱${easyPct}%` : '',
-    ].filter(Boolean).join('  ');
-
-    const menusBlock = analysis.top5 && analysis.top5.length > 0 ? `
-      <div class="today-main-menus">
-        <div class="today-main-menus-label">탑 메뉴</div>
-        ${analysis.top5.slice(0,3).map((m, i) => `
-          <div class="today-main-menu-item">
-            <div class="today-main-menu-left">
-              <span class="today-main-menu-rank">${RANK[i]}</span>
-              <span class="today-main-menu-name">${m.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
-            </div>
-            <span class="today-main-menu-amt">${m.amt}건</span>
-          </div>`).join('')}
-      </div>` : '';
 
     return `
       <div class="today-main-card">
-        <div class="today-main-card-header">
-          <div>
-            <div class="today-main-year">${yearsBack}년 전 · ${year}년</div>
-            <div class="today-main-date-label">${targetDate} (${DOW_KO[targetDow]})</div>
-            ${payInline ? `<div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:4px;">${payInline}</div>` : ''}
-          </div>
-          ${weatherBlock}
+        <div>
+          <div class="tmc-year">${year}년</div>
+          <div class="tmc-date">${targetDate.slice(5)} (${DOW_KO[tdow]})</div>
         </div>
-        <div class="today-main-revenue">${analysis.revenue.toLocaleString()}<span class="unit">원</span></div>
-        <div class="today-main-stats">
-          <div class="today-main-stat">
-            <div class="today-main-stat-label">매출</div>
-            <div class="today-main-stat-value">${formatCurrency(analysis.revenue)}원</div>
-          </div>
-          <div class="today-main-stat">
-            <div class="today-main-stat-label">건단가</div>
-            <div class="today-main-stat-value">${analysis.avgTx.toLocaleString()}</div>
-          </div>
-          <div class="today-main-stat">
-            <div class="today-main-stat-label">첫 주문</div>
-            <div class="today-main-stat-value">${analysis.firstOrder || '—'}</div>
-          </div>
-          <div class="today-main-stat">
-            <div class="today-main-stat-label">마지막</div>
-            <div class="today-main-stat-value">${analysis.lastOrder || '—'}</div>
-          </div>
-          <div class="today-main-stat">
-            <div class="today-main-stat-label">피크</div>
-            <div class="today-main-stat-value">${analysis.peakHour != null ? analysis.peakHour + '시' : '—'}</div>
-          </div>
-          <div class="today-main-stat">
-            <div class="today-main-stat-label">영업시간</div>
-            <div class="today-main-stat-value">${analysis.openHours || '—'}</div>
-          </div>
-        </div>
-        ${menusBlock}
+        <div class="tmc-revenue">${formatCurrency(analysis.revenue)}<span class="u">원</span></div>
+        <div class="tmc-meta">건단가 <span>${analysis.avgTx.toLocaleString()}</span></div>
+        <div class="tmc-meta">피크 <span>${analysis.peakHour != null ? analysis.peakHour + '시' : '—'}</span></div>
       </div>`;
-  }).join('') || '<div class="today-nodata-card">비교할 과거 데이터가 없습니다</div>';
-}
+  }).join('');
 
+  $('todayMainCards').innerHTML = cards
+    ? `<div class="today-cards-wrap">${cards}</div>`
+    : '<div class="today-nodata-card" style="border-radius:4px;border:1px solid var(--line);">비교할 과거 데이터가 없습니다</div>';
+}
 async function openTodayModal() {
   openModal('todayModal');
 
@@ -4179,6 +4205,21 @@ function setupEvents() {
   setupCalendarEvents();
 
   // 톱바 아이콘
+  // 오늘 탭 날짜 화살표
+  $('todayNavPrev').addEventListener('click', () => {
+    const base = new Date(getTodayPageDateStr() + 'T12:00:00');
+    base.setDate(base.getDate() - 1);
+    todayPageDate = base.toISOString().slice(0, 10);
+    renderTodayMainPage().catch(e => console.warn(e));
+  });
+  $('todayNavNext').addEventListener('click', () => {
+    const base = new Date(getTodayPageDateStr() + 'T12:00:00');
+    base.setDate(base.getDate() + 1);
+    const next = base.toISOString().slice(0, 10);
+    todayPageDate = next === new Date().toISOString().slice(0, 10) ? null : next;
+    renderTodayMainPage().catch(e => console.warn(e));
+  });
+
   $('btnToday').addEventListener('click', () => {
     if (allRecords.length === 0) { toast('데이터가 없습니다', 'error'); return; }
     openTodayModal();
