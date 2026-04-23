@@ -1817,29 +1817,25 @@ async function dbBulkPut(store, items) {
   const { writeBatch, doc, getDoc } = window._fbFns;
 
   let added = 0, skipped = 0;
-  // 배치 단위 500개 처리
-  const chunks = [];
-  for (let i = 0; i < items.length; i += 400) {
-    chunks.push(items.slice(i, i + 400));
-  }
+  const chunkSize = 400;
 
-  for (const chunk of chunks) {
-    // 기존 ID 존재 여부 확인
-    const existChecks = await Promise.all(
-      chunk.map(item => getDoc(doc(db, 'users', _uid, store, String(item.id || item.key || item.name))))
-    );
+  for (let i = 0; i < items.length; i += chunkSize) {
+    const chunk = items.slice(i, i + chunkSize);
+
+    // 존재 여부 병렬 확인
+    const refs = chunk.map(item => doc(db, 'users', _uid, store, String(item.id || item.key || item.name)));
+    const snaps = await Promise.all(refs.map(r => getDoc(r)));
 
     const batch = writeBatch(db);
-    chunk.forEach((item, i) => {
-      if (existChecks[i].exists()) {
+    chunk.forEach((item, j) => {
+      if (snaps[j].exists()) {
         skipped++;
       } else {
-        const id = String(item.id || item.key || item.name);
-        batch.set(doc(db, 'users', _uid, store, id), item);
+        batch.set(refs[j], item);
         added++;
       }
     });
-    await batch.commit();
+    if (added + skipped > i) await batch.commit();
   }
 
   return { added, skipped };
@@ -3156,41 +3152,87 @@ function renderFileManageList(files) {
 }
 
 async function exportAll() {
-  const records = await dbGetAll('records');
-  const files = await dbGetAll('files');
-  const settingsList = await dbGetAll('settings');
-  const blob = { version: 1, exportedAt: new Date().toISOString(), records, files, settings: settingsList };
-  const b = new Blob(['\uFEFF' + JSON.stringify(blob, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(b);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `매출저널_백업_${new Date().toISOString().slice(0,10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('✓ 백업 다운로드 완료', 'success');
+  if (!_uid) { toast('먼저 로그인하세요', 'error'); return; }
+  showStatus('백업 준비 중…', 'info', true);
+  try {
+    const records = await dbGetAll('records');
+    const files = await dbGetAll('files');
+    const settingsList = await dbGetAll('settings');
+    const blob = { version: 2, exportedAt: new Date().toISOString(), records, files, settings: settingsList };
+    const b = new Blob(['\uFEFF' + JSON.stringify(blob, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(b);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `매출저널_백업_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    hideStatus();
+    toast(`✓ 백업 완료 (${records.length}건)`, 'success');
+  } catch (err) {
+    hideStatus();
+    toast('❌ 백업 실패: ' + err.message, 'error');
+    console.error(err);
+  }
 }
 
 async function importBackup(file) {
+  if (!_uid) { toast('먼저 로그인하세요', 'error'); return; }
   try {
     const text = await file.text();
     const data = JSON.parse(text.replace(/^\uFEFF/, ''));
-    if (!data.records || !Array.isArray(data.records)) throw new Error('잘못된 백업 파일');
-    const ok = confirm(`백업 파일에 ${data.records.length}건이 있습니다.\n현재 데이터와 병합할까요? (중복 자동 제외)`);
+
+    const records = data.records;
+    if (!records || !Array.isArray(records)) throw new Error('잘못된 백업 파일 형식');
+
+    const ok = confirm(`백업 파일에 ${records.length}건이 있습니다.\nFirestore에 저장합니다. 중복은 자동 제외됩니다.\n계속할까요?`);
     if (!ok) return;
-    const result = await dbBulkPut('records', data.records);
-    if (data.files) for (const f of data.files) await dbPut('files', f).catch(() => {});
-    if (data.settings) for (const s of data.settings) await dbPut('settings', s).catch(() => {});
+
+    showStatus(`0 / ${records.length}건 저장 중…`, 'info', true);
+
+    // 400건씩 나눠서 처리 (Firestore 배치 제한)
+    const chunkSize = 400;
+    let totalAdded = 0, totalSkipped = 0;
+
+    for (let i = 0; i < records.length; i += chunkSize) {
+      const chunk = records.slice(i, i + chunkSize);
+      showStatus(`${Math.min(i + chunkSize, records.length)} / ${records.length}건 저장 중…`, 'info', true);
+      const result = await dbBulkPut('records', chunk);
+      totalAdded += result.added;
+      totalSkipped += result.skipped;
+    }
+
+    // 파일 메타데이터 복원
+    if (data.files) {
+      for (const f of data.files) {
+        await dbPut('files', f).catch(() => {});
+      }
+    }
+
+    // 설정 복원 (pw_hash 제외 — Firebase Auth가 담당)
+    if (data.settings) {
+      for (const s of data.settings) {
+        if (s.key !== 'pw_hash') await dbPut('settings', s).catch(() => {});
+      }
+    }
+
     await loadSettings();
-    toast(`✓ ${result.added}건 복원 (${result.skipped}건 중복)`, 'success');
+    hideStatus();
+    toast(`✓ ${totalAdded}건 복원 완료 (${totalSkipped}건 중복 제외)`, 'success');
     await refreshAll();
-  } catch (err) { toast('❌ ' + err.message, 'error'); }
+  } catch (err) {
+    hideStatus();
+    toast('❌ 복원 실패: ' + err.message, 'error');
+    console.error('importBackup error:', err);
+  }
 }
 
 async function wipeAll() {
   if (!confirm('정말 모든 데이터를 삭제할까요? 되돌릴 수 없습니다.')) return;
   if (!confirm('진짜로 삭제합니다. 정말인가요?')) return;
+  showStatus('삭제 중…', 'info', true);
   await dbClear('records');
   await dbClear('files');
+  hideStatus();
   toast('✓ 모두 삭제됨', 'success');
   await refreshAll();
 }
