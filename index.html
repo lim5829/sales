@@ -1082,6 +1082,153 @@
     .cal-cell-amt { font-size: 12px; letter-spacing: -0.02em; font-weight: 500; }
   }
 
+  /* ---------- 오늘 리포트 모달 ---------- */
+  .today-header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  .today-date {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    color: var(--accent);
+    font-style: italic;
+    margin-bottom: 4px;
+  }
+  .today-dow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .today-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .today-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent);
+    opacity: 0.5;
+  }
+  .today-card-year {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-style: italic;
+    color: var(--accent);
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .today-card-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+  .today-weather {
+    font-size: 22px;
+    line-height: 1;
+  }
+  .today-revenue {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .today-revenue .unit { font-size: 14px; color: var(--ink-dim); margin-left: 3px; }
+
+  .today-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .today-stat {
+    background: var(--bg-soft);
+    border-radius: 3px;
+    padding: 8px 10px;
+  }
+  .today-stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .today-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .today-menus {
+    border-top: 1px dashed var(--line);
+    padding-top: 10px;
+    margin-top: 4px;
+  }
+  .today-menus-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .today-menu-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    font-size: 12px;
+  }
+  .today-menu-name { color: var(--ink); }
+  .today-menu-rank {
+    font-family: 'Fraunces', serif;
+    font-size: 11px;
+    font-style: italic;
+    color: var(--accent);
+    margin-right: 6px;
+    min-width: 16px;
+  }
+  .today-menu-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+  }
+
+  .today-no-data {
+    text-align: center;
+    padding: 20px;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .today-loading {
+    text-align: center;
+    padding: 30px;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
   /* ---------- 잠금 화면 ---------- */
   .lock-screen {
     position: fixed;
@@ -1422,6 +1569,9 @@
       <div class="brand-sub">Sales Journal</div>
     </div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="btnToday" title="오늘 리포트">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><text x="12" y="19" text-anchor="middle" font-size="7" font-family="serif" font-weight="bold" fill="currentColor" stroke="none">今</text></svg>
+      </button>
       <button class="icon-btn" id="btnData" title="데이터 관리">
         <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>
         <span class="badge-dot" id="dataBadge"></span>
@@ -1667,6 +1817,23 @@
     <div class="modal-section">
       <div class="modal-section-title" style="color: var(--danger);">⚠ 위험 구역</div>
       <button class="btn-danger" id="btnWipe">모든 데이터 삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- 오늘 리포트 모달 -->
+<div class="modal-backdrop" id="todayModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">오늘의 과거 같은 요일</div>
+      <button class="close-btn" data-close="todayModal">×</button>
+    </div>
+    <div class="today-header">
+      <div class="today-date" id="todayDateLabel">—</div>
+      <div class="today-dow" id="todayDowLabel">—</div>
+    </div>
+    <div id="todayCards">
+      <div class="today-loading"><span class="spinner"></span>불러오는 중…</div>
     </div>
   </div>
 </div>
@@ -3373,6 +3540,205 @@ function updateAccountInfo() {
   }
 }
 
+// ---------- 오늘 리포트 ----------
+const DOW_KO = ['일', '월', '화', '수', '목', '금', '토'];
+const DOW_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Open-Meteo API로 과거 날씨 가져오기 (무료, 로그인 불필요)
+const WEATHER_ICONS = {
+  0: '☀️', 1: '🌤️', 2: '⛅', 3: '☁️',
+  45: '🌫️', 48: '🌫️',
+  51: '🌦️', 53: '🌦️', 55: '🌧️',
+  61: '🌧️', 63: '🌧️', 65: '🌧️',
+  71: '🌨️', 73: '🌨️', 75: '❄️',
+  80: '🌦️', 81: '🌧️', 82: '⛈️',
+  95: '⛈️', 96: '⛈️', 99: '⛈️',
+};
+
+// 위치 설정 (서울 기본값, 설정에서 변경 가능)
+function getLocation() {
+  const stored = localStorage.getItem('pos_location');
+  if (stored) return JSON.parse(stored);
+  return { lat: 37.5665, lon: 126.9780, name: '서울' }; // 기본값
+}
+
+async function fetchWeather(date) {
+  // date: 'YYYY-MM-DD'
+  const loc = getLocation();
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${loc.lat}&longitude=${loc.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min&start_date=${date}&end_date=${date}&timezone=Asia%2FSeoul`;
+  try {
+    const r = await fetch(url);
+    const data = await r.json();
+    const code = data?.daily?.weathercode?.[0];
+    const tmax = data?.daily?.temperature_2m_max?.[0];
+    const tmin = data?.daily?.temperature_2m_min?.[0];
+    const icon = WEATHER_ICONS[code] || '🌡️';
+    return { icon, tmax, tmin, code };
+  } catch {
+    return { icon: '—', tmax: null, tmin: null };
+  }
+}
+
+// 특정 날짜의 같은 요일인 가장 가까운 날짜 찾기 (n년 전)
+function getSameDayOfWeek(baseDate, yearsBack) {
+  // baseDate의 요일과 같은, n년 전 ±3일 이내에서 가장 가까운 날짜
+  const base = new Date(baseDate);
+  const targetDow = base.getDay();
+
+  // n년 전 같은 날짜 근처
+  const approx = new Date(base);
+  approx.setFullYear(approx.getFullYear() - yearsBack);
+
+  // ±3일 범위에서 같은 요일 찾기
+  for (let delta = 0; delta <= 3; delta++) {
+    for (const sign of [0, 1, -1]) {
+      if (delta === 0 && sign !== 0) continue;
+      const candidate = new Date(approx);
+      candidate.setDate(candidate.getDate() + (delta * sign));
+      if (candidate.getDay() === targetDow) {
+        return candidate.toISOString().slice(0, 10);
+      }
+    }
+  }
+  return approx.toISOString().slice(0, 10);
+}
+
+// 해당 날짜 records 분석
+function analyzeDayRecords(date) {
+  const dayRecs = allRecords.filter(r => r.date === date && !r.monthly);
+  if (dayRecs.length === 0) return null;
+
+  const revenue = dayRecs.reduce((s, r) => s + r.amount, 0);
+  const count = dayRecs.filter(r => !r.manual).length || dayRecs.length;
+  const avgTx = count > 0 ? Math.round(revenue / count) : 0;
+
+  // 첫 주문 시간
+  const times = dayRecs
+    .map(r => r.time)
+    .filter(t => t && t.match(/\d{2}:\d{2}/))
+    .sort();
+  const firstOrder = times.length > 0 ? times[0].slice(0, 5) : null;
+
+  // 탑3 메뉴 (desc 필드 기반)
+  const menuCount = {};
+  dayRecs.forEach(r => {
+    if (!r.desc || r.desc === '월별 수기입력' || r.desc === '일별 수기입력') return;
+    // "아메리카노 외 2건" → "아메리카노" 추출
+    const name = r.desc.replace(/\s*외\s*\d+건?/, '').trim();
+    if (!name) return;
+    menuCount[name] = (menuCount[name] || 0) + r.amount;
+  });
+
+  const top3 = Object.entries(menuCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([name, amt]) => ({ name, amt }));
+
+  return { revenue, count, avgTx, firstOrder, top3 };
+}
+
+async function openTodayModal() {
+  openModal('todayModal');
+
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  const dow = today.getDay();
+
+  $('todayDateLabel').textContent = todayStr;
+  $('todayDowLabel').textContent = `${DOW_KO[dow]}요일 · ${DOW_EN[dow]}`;
+  $('todayCards').innerHTML = '<div class="today-loading"><span class="spinner"></span>분석 중…</div>';
+
+  // 데이터가 있는 연도들 파악
+  const years = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].sort().reverse();
+  const currentYear = today.getFullYear();
+  const pastYears = years.filter(y => parseInt(y) < currentYear);
+
+  if (pastYears.length === 0) {
+    $('todayCards').innerHTML = '<div class="today-no-data">과거 데이터가 없습니다</div>';
+    return;
+  }
+
+  const cards = [];
+
+  for (let i = 1; i <= pastYears.length; i++) {
+    const targetDate = getSameDayOfWeek(todayStr, i);
+    const targetYear = targetDate.slice(0, 4);
+    if (!years.includes(targetYear)) continue;
+
+    const analysis = analyzeDayRecords(targetDate);
+    const targetDow = new Date(targetDate).getDay();
+
+    // 날씨는 병렬로 가져오기
+    const weatherPromise = fetchWeather(targetDate);
+
+    cards.push({ i, targetDate, targetYear, targetDow, analysis, weatherPromise });
+  }
+
+  // 날씨 병렬 fetch
+  const weatherResults = await Promise.all(cards.map(c => c.weatherPromise));
+
+  const html = cards.map((card, idx) => {
+    const { targetDate, targetYear, targetDow, analysis } = card;
+    const weather = weatherResults[idx];
+    const yearsAgo = parseInt(todayStr.slice(0, 4)) - parseInt(targetYear);
+
+    if (!analysis) {
+      return `
+        <div class="today-card">
+          <div class="today-card-year">
+            <span>${yearsAgo}년 전</span>
+            <span class="today-card-date">${targetDate} (${DOW_KO[targetDow]})</span>
+          </div>
+          <div class="today-no-data" style="padding:12px 0; text-align:left; font-size:11px;">데이터 없음</div>
+        </div>`;
+    }
+
+    const top3Html = analysis.top3.length > 0
+      ? `<div class="today-menus">
+          <div class="today-menus-label">탑 메뉴</div>
+          ${analysis.top3.map((m, i) => `
+            <div class="today-menu-item">
+              <div style="display:flex; align-items:center;">
+                <span class="today-menu-rank">${['①','②','③'][i]}</span>
+                <span class="today-menu-name">${escapeHtml(m.name)}</span>
+              </div>
+              <span class="today-menu-amt">${m.amt.toLocaleString()}원</span>
+            </div>`).join('')}
+        </div>`
+      : '';
+
+    const weatherHtml = weather.icon !== '—'
+      ? `<span class="today-weather" title="${weather.tmax ? weather.tmax + '°C / ' + weather.tmin + '°C' : ''}">${weather.icon}</span>`
+      : '';
+
+    return `
+      <div class="today-card">
+        <div class="today-card-year">
+          <span>${yearsAgo}년 전 · ${targetDate} (${DOW_KO[targetDow]})</span>
+          ${weatherHtml}
+        </div>
+        <div class="today-revenue">${analysis.revenue.toLocaleString()}<span class="unit">원</span></div>
+        <div class="today-stats">
+          <div class="today-stat">
+            <div class="today-stat-label">주문수</div>
+            <div class="today-stat-value">${analysis.count}건</div>
+          </div>
+          <div class="today-stat">
+            <div class="today-stat-label">건단가</div>
+            <div class="today-stat-value">${analysis.avgTx.toLocaleString()}</div>
+          </div>
+          <div class="today-stat">
+            <div class="today-stat-label">첫 주문</div>
+            <div class="today-stat-value">${analysis.firstOrder || '—'}</div>
+          </div>
+        </div>
+        ${top3Html}
+      </div>`;
+  }).join('');
+
+  $('todayCards').innerHTML = html || '<div class="today-no-data">표시할 데이터가 없습니다</div>';
+}
+
 // ---------- 이벤트 ----------
 function openModal(id) { $(id).classList.add('show'); }
 function closeModal(id) { $(id).classList.remove('show'); }
@@ -3382,6 +3748,11 @@ function setupEvents() {
   setupCalendarEvents();
 
   // 톱바 아이콘
+  $('btnToday').addEventListener('click', () => {
+    if (allRecords.length === 0) { toast('데이터가 없습니다', 'error'); return; }
+    openTodayModal();
+  });
+
   $('btnData').addEventListener('click', async () => {
     openModal('dataModal');
     await refreshManualRecent();
