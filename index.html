@@ -823,6 +823,225 @@
     text-transform: uppercase;
   }
 
+  /* ---------- 달력 매출 뷰 ---------- */
+  .cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cal-nav-btn {
+    background: transparent;
+    border: 1px solid var(--line);
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 2px;
+    color: var(--ink-dim);
+    transition: all 0.15s;
+    font-size: 16px;
+    line-height: 1;
+  }
+  .cal-nav-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .cal-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  .cal-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    min-width: 110px;
+    text-align: center;
+    letter-spacing: -0.01em;
+  }
+
+  .cal-year {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    margin-left: 4px;
+  }
+
+  .cal-summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    text-align: right;
+  }
+  .cal-summary strong {
+    color: var(--accent);
+    font-weight: 700;
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 13px;
+  }
+
+  .cal-dow-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+
+  .cal-dow-label {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    padding: 4px 0;
+  }
+  .cal-dow-label.sun { color: var(--danger); }
+  .cal-dow-label.sat { color: #4a7ea8; }
+
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+
+  .cal-cell {
+    aspect-ratio: 1 / 1.05;
+    background: var(--bg-soft);
+    border-radius: 2px;
+    padding: 4px 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.1s;
+    position: relative;
+    overflow: hidden;
+    min-height: 48px;
+  }
+
+  .cal-cell.empty {
+    background: transparent;
+    cursor: default;
+  }
+
+  .cal-cell:not(.empty):not(.no-data):hover {
+    transform: scale(1.04);
+    z-index: 2;
+  }
+
+  .cal-cell.no-data {
+    background: var(--bg-soft);
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .cal-cell.today {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .cal-cell-day {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-dim);
+    line-height: 1;
+    font-weight: 500;
+  }
+  .cal-cell.sun .cal-cell-day { color: var(--danger); }
+  .cal-cell.sat .cal-cell-day { color: #4a7ea8; }
+  .cal-cell.has-data .cal-cell-day { color: var(--ink); }
+
+  .cal-cell-amt {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink);
+    line-height: 1.1;
+    font-weight: 500;
+    text-align: right;
+    word-break: break-all;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 매출 수준에 따른 배경색 강도 */
+  .cal-cell.lv-1 { background: rgba(196, 132, 66, 0.10); }
+  .cal-cell.lv-2 { background: rgba(196, 132, 66, 0.22); }
+  .cal-cell.lv-3 { background: rgba(196, 132, 66, 0.38); }
+  .cal-cell.lv-4 { background: rgba(196, 132, 66, 0.55); }
+  .cal-cell.lv-5 { background: rgba(196, 132, 66, 0.75); }
+  .cal-cell.lv-4 .cal-cell-day,
+  .cal-cell.lv-5 .cal-cell-day { color: #fff; opacity: 0.85; }
+  .cal-cell.lv-4 .cal-cell-amt,
+  .cal-cell.lv-5 .cal-cell-amt { color: #fff; }
+
+  /* 선택된 날짜 상세 박스 */
+  .cal-detail {
+    margin-top: 14px;
+    padding: 14px 16px;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    display: none;
+  }
+  .cal-detail.show { display: block; animation: fadeIn 0.2s ease; }
+
+  .cal-detail-date {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .cal-detail-amt {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .cal-detail-amt .unit {
+    font-size: 13px;
+    color: var(--ink-dim);
+    margin-left: 4px;
+  }
+
+  .cal-detail-meta {
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+  }
+
+  .cal-detail-close {
+    float: right;
+    background: transparent;
+    border: none;
+    color: var(--ink-faint);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
+    margin-top: -2px;
+  }
+  .cal-detail-close:hover { color: var(--ink); }
+
+  @media (min-width: 640px) {
+    .cal-cell { min-height: 64px; }
+    .cal-cell-day { font-size: 11px; }
+    .cal-cell-amt { font-size: 11px; }
+  }
+
   /* ---------- 잠금 화면 ---------- */
   .lock-screen {
     position: fixed;
@@ -1265,6 +1484,33 @@
         </div>
         <div id="insights"></div>
       </div>
+    </div>
+
+    <!-- 달력 매출 뷰 -->
+    <div class="widget" style="margin-top:18px" id="calendarWidget">
+      <div class="widget-header">
+        <div class="widget-title">월별 달력</div>
+        <div class="widget-subtitle">Daily Calendar</div>
+      </div>
+      <div class="cal-header">
+        <div class="cal-nav">
+          <button class="cal-nav-btn" id="calPrev" title="이전 달">‹</button>
+          <div class="cal-title" id="calTitle">—</div>
+          <button class="cal-nav-btn" id="calNext" title="다음 달">›</button>
+        </div>
+        <div class="cal-summary" id="calSummary">—</div>
+      </div>
+      <div class="cal-dow-row">
+        <div class="cal-dow-label sun">SUN</div>
+        <div class="cal-dow-label">MON</div>
+        <div class="cal-dow-label">TUE</div>
+        <div class="cal-dow-label">WED</div>
+        <div class="cal-dow-label">THU</div>
+        <div class="cal-dow-label">FRI</div>
+        <div class="cal-dow-label sat">SAT</div>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-detail" id="calDetail"></div>
     </div>
 
     <!-- 상세 데이터 (탭) -->
@@ -1928,6 +2174,10 @@ async function refreshAll() {
   allRecords = await dbGetAll('records');
   allRecords.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
+  // 데이터 업데이트 시 달력 상태 재설정
+  calCurrentYear = null;
+  calCurrentMonth = null;
+
   const files = await dbGetAll('files');
   renderFileManageList(files);
 
@@ -1982,6 +2232,7 @@ function renderDashboard() {
   renderDayOfWeek(records);
   renderHourly(records);
   renderInsights(records);
+  renderCalendar();
   renderYearly();
   renderYoyTable();
   renderDowTable(records);
@@ -2447,6 +2698,181 @@ function renderInsights(records) {
 }
 
 // --- 연도별 ---
+// --- 달력 뷰 ---
+let calCurrentYear = null;
+let calCurrentMonth = null;  // 0~11
+let calDataRange = { min: null, max: null };
+
+function initCalendarState() {
+  if (allRecords.length === 0) return;
+  const lastDate = allRecords[allRecords.length - 1].date;
+  const [y, m] = lastDate.split('-').map(Number);
+  calCurrentYear = y;
+  calCurrentMonth = m - 1;
+  calDataRange.min = allRecords[0].date.slice(0, 7);
+  calDataRange.max = lastDate.slice(0, 7);
+}
+
+function renderCalendar() {
+  if (allRecords.length === 0) {
+    $('calendarWidget').style.display = 'none';
+    return;
+  }
+  $('calendarWidget').style.display = '';
+
+  if (calCurrentYear === null) initCalendarState();
+
+  const y = calCurrentYear;
+  const m = calCurrentMonth;
+  const ymStr = `${y}-${String(m + 1).padStart(2, '0')}`;
+
+  // 해당 월 데이터 집계 (일별)
+  const byDay = {};      // day -> { amount, count, monthly }
+  const monthRecords = allRecords.filter(r => r.date.startsWith(ymStr));
+  monthRecords.forEach(r => {
+    const day = parseInt(r.date.slice(8, 10));
+    if (!byDay[day]) byDay[day] = { amount: 0, count: 0, monthly: r.monthly };
+    byDay[day].amount += r.amount;
+    if (!r.manual) byDay[day].count += 1;
+    if (r.monthly) byDay[day].monthly = true;
+  });
+
+  // 월 전체가 월단위 수기입력(1일에 전체)인지 감지
+  const isWholeMonthManual = monthRecords.length > 0 && monthRecords.every(r => r.monthly);
+
+  // 해당 월 최대값 (레벨 계산용)
+  const amounts = Object.values(byDay).map(d => d.amount).filter(a => a > 0);
+  const maxAmt = amounts.length > 0 ? Math.max(...amounts) : 0;
+
+  // 헤더 업데이트
+  $('calTitle').innerHTML = `${m + 1}월<span class="cal-year">${y}</span>`;
+
+  const totalAmt = monthRecords.reduce((s, r) => s + r.amount, 0);
+  const activeDays = Object.keys(byDay).length;
+  if (totalAmt > 0) {
+    if (isWholeMonthManual) {
+      $('calSummary').innerHTML = `월 <strong>${formatCurrency(totalAmt)}</strong>원 · 일별 데이터 없음`;
+    } else {
+      $('calSummary').innerHTML = `${activeDays}일 · <strong>${formatCurrency(totalAmt)}</strong>원`;
+    }
+  } else {
+    $('calSummary').innerHTML = '<span style="color:var(--ink-faint)">데이터 없음</span>';
+  }
+
+  // 이전/다음 버튼 활성화 여부
+  $('calPrev').disabled = (ymStr <= calDataRange.min);
+  $('calNext').disabled = (ymStr >= calDataRange.max);
+
+  // 달력 그리기
+  const firstDay = new Date(y, m, 1).getDay();  // 0 일요일
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  let html = '';
+
+  // 앞 빈 칸
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="cal-cell empty"></div>';
+  }
+
+  // 날짜 셀
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${ymStr}-${String(d).padStart(2, '0')}`;
+    const data = byDay[d];
+    const dow = new Date(y, m, d).getDay();
+    const cls = [];
+
+    // 월 전체 수기(월단위)일 때는 1일에만 표시하지 않고 빈 셀로
+    const showData = data && !(isWholeMonthManual && d !== 1);
+
+    if (showData && data.amount > 0) {
+      cls.push('has-data');
+      // 레벨 (1~5) - 해당 월 내 상대 강도
+      if (maxAmt > 0) {
+        const ratio = data.amount / maxAmt;
+        if (ratio >= 0.85) cls.push('lv-5');
+        else if (ratio >= 0.65) cls.push('lv-4');
+        else if (ratio >= 0.45) cls.push('lv-3');
+        else if (ratio >= 0.25) cls.push('lv-2');
+        else cls.push('lv-1');
+      }
+    } else {
+      cls.push('no-data');
+    }
+
+    if (dow === 0) cls.push('sun');
+    if (dow === 6) cls.push('sat');
+    if (dateStr === todayStr) cls.push('today');
+
+    const amtHtml = showData && data.amount > 0
+      ? `<div class="cal-cell-amt">${formatCurrency(data.amount)}</div>`
+      : '';
+
+    const dataAttr = showData && data.amount > 0
+      ? `data-date="${dateStr}" data-amount="${data.amount}" data-count="${data.count}" data-monthly="${data.monthly ? '1' : '0'}"`
+      : '';
+
+    html += `<div class="cal-cell ${cls.join(' ')}" ${dataAttr}>
+      <div class="cal-cell-day">${d}</div>
+      ${amtHtml}
+    </div>`;
+  }
+
+  $('calGrid').innerHTML = html;
+  $('calDetail').classList.remove('show');
+
+  // 셀 클릭 이벤트
+  $('calGrid').querySelectorAll('.cal-cell[data-date]').forEach(cell => {
+    cell.addEventListener('click', () => showCalDetail(cell));
+  });
+}
+
+function showCalDetail(cell) {
+  const date = cell.dataset.date;
+  const amount = Number(cell.dataset.amount);
+  const count = Number(cell.dataset.count);
+  const isMonthly = cell.dataset.monthly === '1';
+
+  const d = new Date(date);
+  const dowNames = ['일', '월', '화', '수', '목', '금', '토'];
+  const dowName = dowNames[d.getDay()];
+
+  let meta = '';
+  if (isMonthly) {
+    meta = '월 단위 수기 입력 · 일별 분해 없음';
+  } else if (count > 0) {
+    const avgTx = Math.round(amount / count);
+    meta = `${count.toLocaleString()}건 · 건당 ${formatCurrency(avgTx)}원`;
+  } else {
+    meta = '일별 수기 입력';
+  }
+
+  $('calDetail').innerHTML = `
+    <button class="cal-detail-close" onclick="document.getElementById('calDetail').classList.remove('show')">×</button>
+    <div class="cal-detail-date">${date} (${dowName})</div>
+    <div class="cal-detail-amt">${formatCurrency(amount)}<span class="unit">원</span></div>
+    <div class="cal-detail-meta">${meta}</div>
+  `;
+  $('calDetail').classList.add('show');
+}
+
+function moveCal(direction) {
+  calCurrentMonth += direction;
+  if (calCurrentMonth < 0) {
+    calCurrentMonth = 11;
+    calCurrentYear -= 1;
+  } else if (calCurrentMonth > 11) {
+    calCurrentMonth = 0;
+    calCurrentYear += 1;
+  }
+  renderCalendar();
+}
+
+function setupCalendarEvents() {
+  $('calPrev').addEventListener('click', () => moveCal(-1));
+  $('calNext').addEventListener('click', () => moveCal(1));
+}
+
 function renderYearly() {
   const byYear = {};
   allRecords.forEach(r => {
@@ -2843,6 +3269,7 @@ function closeModal(id) { $(id).classList.remove('show'); }
 
 function setupEvents() {
   setupManualEvents();
+  setupCalendarEvents();
 
   // 톱바 아이콘
   $('btnData').addEventListener('click', async () => {
