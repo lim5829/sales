@@ -1849,7 +1849,7 @@
         </div>
         <!-- 연도별 바 차트 -->
         <div class="year-bar-chart" id="yearBarChart">
-          <div class="year-bar-title">같은 요일 연도별 주문 건수 비교</div>
+          <div class="year-bar-title">같은 요일 연도별 매출 비교</div>
           <div class="year-bar-rows" id="yearBarRows">
             <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
           </div>
@@ -3915,18 +3915,18 @@ function analyzeDayRecords(date) {
   const cash = dayRecs.reduce((s, r) => s + (r.cash || 0), 0);
   const easy = dayRecs.reduce((s, r) => s + (r.easy || 0), 0);
 
-  // 탑5 메뉴
-  const menuRev = {};
+  // 탑3 메뉴 (주문 건수 기준)
+  const menuCount = {};
   dayRecs.forEach(r => {
     if (!r.desc || r.desc === '월별 수기입력' || r.desc === '일별 수기입력') return;
     const name = r.desc.replace(/\s*외\s*\d+건?/, '').trim();
     if (!name) return;
-    menuRev[name] = (menuRev[name] || 0) + r.amount;
+    menuCount[name] = (menuCount[name] || 0) + 1;
   });
-  const top5 = Object.entries(menuRev)
+  const top5 = Object.entries(menuCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
-    .map(([name, amt]) => ({ name, amt }));
+    .map(([name, cnt]) => ({ name, amt: cnt }));
 
   return { revenue, count, avgTx, firstOrder, lastOrder, openHours, peakHour, card, cash, easy, top5 };
 }
@@ -3965,18 +3965,18 @@ async function renderTodayMainPage() {
     return { year: y, yearsBack, targetDate, analysis };
   });
 
-  // ─── 연도별 바 차트 (주문 건수 기준) ───
-  const maxCount = Math.max(...pastData.map(d => d.analysis?.count || 0), 1);
+  // ─── 연도별 바 차트 (매출 기준) ───
+  const maxRev = Math.max(...pastData.map(d => d.analysis?.revenue || 0), 1);
   $('yearBarRows').innerHTML = pastData.map(d => {
-    const cnt = d.analysis?.count || 0;
-    const pct = Math.max(cnt / maxCount * 100, cnt > 0 ? 2 : 0).toFixed(1);
-    const valText = cnt > 0 ? cnt + '건' : '—';
+    const rev = d.analysis?.revenue || 0;
+    const pct = Math.max(rev / maxRev * 100, rev > 0 ? 2 : 0).toFixed(1);
+    const valText = rev > 0 ? formatCurrency(rev) + '원' : '—';
     const targetDow = new Date(d.targetDate + 'T12:00:00').getDay();
     return `
       <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[targetDow]})">
         <div class="year-bar-label">${d.year}</div>
         <div class="year-bar-track">
-          <div class="year-bar-fill ${cnt > 0 ? 'muted' : 'no-data'}" style="width:${pct}%"></div>
+          <div class="year-bar-fill ${rev > 0 ? 'muted' : 'no-data'}" style="width:${pct}%"></div>
         </div>
         <div class="year-bar-val">${valText}</div>
       </div>`;
@@ -4022,7 +4022,7 @@ async function renderTodayMainPage() {
               <span class="today-main-menu-rank">${RANK[i]}</span>
               <span class="today-main-menu-name">${m.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
             </div>
-            <span class="today-main-menu-amt">${m.amt.toLocaleString()}원</span>
+            <span class="today-main-menu-amt">${m.amt}건</span>
           </div>`).join('')}
       </div>` : '';
 
@@ -4036,7 +4036,7 @@ async function renderTodayMainPage() {
           </div>
           ${weatherBlock}
         </div>
-        <div class="today-main-revenue">${analysis.count}<span class="unit">건</span></div>
+        <div class="today-main-revenue">${analysis.revenue.toLocaleString()}<span class="unit">원</span></div>
         <div class="today-main-stats">
           <div class="today-main-stat">
             <div class="today-main-stat-label">매출</div>
