@@ -3883,28 +3883,52 @@ function analyzeDayRecords(date) {
   const count = dayRecs.filter(r => !r.manual).length || dayRecs.length;
   const avgTx = count > 0 ? Math.round(revenue / count) : 0;
 
-  // 첫 주문 시간
+  // 첫/마지막 주문
   const times = dayRecs
     .map(r => r.time)
     .filter(t => t && t.match(/\d{2}:\d{2}/))
     .sort();
   const firstOrder = times.length > 0 ? times[0].slice(0, 5) : null;
+  const lastOrder  = times.length > 0 ? times[times.length - 1].slice(0, 5) : null;
+
+  // 영업시간 (첫~마지막)
+  let openHours = null;
+  if (firstOrder && lastOrder && firstOrder !== lastOrder) {
+    const [fh, fm] = firstOrder.split(':').map(Number);
+    const [lh, lm] = lastOrder.split(':').map(Number);
+    const mins = (lh * 60 + lm) - (fh * 60 + fm);
+    if (mins > 0) openHours = `${Math.floor(mins/60)}h ${mins%60}m`;
+  }
+
+  // 피크 시간대
+  const hourRev = {};
+  dayRecs.forEach(r => {
+    const h = r.time ? parseInt(r.time.slice(0,2)) : -1;
+    if (h >= 0) hourRev[h] = (hourRev[h] || 0) + r.amount;
+  });
+  const peakHour = Object.keys(hourRev).length > 0
+    ? parseInt(Object.entries(hourRev).sort((a,b) => b[1]-a[1])[0][0])
+    : null;
+
+  // 결제수단
+  const card = dayRecs.reduce((s, r) => s + (r.card || 0), 0);
+  const cash = dayRecs.reduce((s, r) => s + (r.cash || 0), 0);
+  const easy = dayRecs.reduce((s, r) => s + (r.easy || 0), 0);
 
   // 탑5 메뉴
-  const menuCount = {};
+  const menuRev = {};
   dayRecs.forEach(r => {
     if (!r.desc || r.desc === '월별 수기입력' || r.desc === '일별 수기입력') return;
     const name = r.desc.replace(/\s*외\s*\d+건?/, '').trim();
     if (!name) return;
-    menuCount[name] = (menuCount[name] || 0) + r.amount;
+    menuRev[name] = (menuRev[name] || 0) + r.amount;
   });
-
-  const top5 = Object.entries(menuCount)
+  const top5 = Object.entries(menuRev)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
     .map(([name, amt]) => ({ name, amt }));
 
-  return { revenue, count, avgTx, firstOrder, top5 };
+  return { revenue, count, avgTx, firstOrder, lastOrder, openHours, peakHour, card, cash, easy, top5 };
 }
 
 // 오늘 탭 메인 페이지 렌더링
@@ -3913,55 +3937,36 @@ async function renderTodayMainPage() {
   const todayStr = today.toISOString().slice(0, 10);
   const dow = today.getDay();
 
-  // 헤더
+  // 오늘 날짜/요일만 표시
   $('mainTodayDate').innerHTML = `<em>${todayStr}</em>`;
-  $('mainTodayDow').textContent = `${DOW_KO[dow]}요일 · ${DOW_EN[dow]}`;
+  $('mainTodayDow').textContent = `${DOW_KO[dow]}요일`;
+
+  // 바 차트 영역 숨기기
+  const chartEl = $('yearBarChart');
+  if (chartEl) chartEl.style.display = 'none';
 
   if (allRecords.length === 0) {
-    $('yearBarRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;font-family:JetBrains Mono,monospace;">데이터 없음</div>';
-    $('todayMainCards').innerHTML = '';
+    $('todayMainCards').innerHTML = '<div class="today-nodata-card">데이터가 없습니다</div>';
     return;
   }
 
+  $('todayMainCards').innerHTML = '<div class="today-loading"><span class="spinner"></span>분석 중…</div>';
+
   const currentYear = today.getFullYear();
-  const years = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].sort().reverse();
-  const pastYears = years.filter(y => parseInt(y) < currentYear);
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0,4)))]
+    .map(Number).filter(y => y < currentYear).sort().reverse();
 
-  // 각 연도의 같은 요일 날짜 & 분석
-  const yearData = [];
-  for (const y of [String(currentYear), ...pastYears]) {
-    const yearsBack = currentYear - parseInt(y);
-    const targetDate = yearsBack === 0 ? todayStr : getSameDayOfWeek(todayStr, yearsBack);
+  // 각 연도별 같은 요일 날짜 & 분석
+  const pastData = dataYears.map(y => {
+    const yearsBack = currentYear - y;
+    const targetDate = getSameDayOfWeek(todayStr, yearsBack);
     const analysis = analyzeDayRecords(targetDate);
-    yearData.push({ year: y, yearsBack, targetDate, analysis });
-  }
+    return { year: y, yearsBack, targetDate, analysis };
+  });
 
-  // ─── 연도별 바 차트 ───
-  const maxRev = Math.max(...yearData.map(d => d.analysis?.revenue || 0), 1);
-
-  $('yearBarRows').innerHTML = yearData.map(d => {
-    const rev = d.analysis?.revenue || 0;
-    const pct = (rev / maxRev * 100).toFixed(1);
-    const isCurrent = d.yearsBack === 0;
-    const label = isCurrent ? '오늘' : `${d.year}`;
-    const valText = rev > 0 ? formatCurrency(rev) + '원' : '데이터 없음';
-    const fillClass = isCurrent ? '' : (rev > 0 ? 'muted' : 'no-data');
-    return `
-      <div class="year-bar-row">
-        <div class="year-bar-label ${isCurrent ? 'current' : ''}">${label}</div>
-        <div class="year-bar-track">
-          <div class="year-bar-fill ${fillClass}" style="width:${pct}%"></div>
-        </div>
-        <div class="year-bar-val ${isCurrent ? 'current' : ''}">${valText}</div>
-      </div>`;
-  }).join('');
-
-  // ─── 연도별 카드 (과거만) ───
-  const pastData = yearData.filter(d => d.yearsBack > 0);
-
-  // 날씨 병렬 fetch
+  // 날씨 병렬 fetch (데이터 있는 것만)
   const weatherResults = await Promise.all(
-    pastData.map(d => fetchWeather(d.targetDate))
+    pastData.map(d => d.analysis ? fetchWeather(d.targetDate) : Promise.resolve({ icon: '—' }))
   );
 
   const RANK = ['①','②','③','④','⑤'];
@@ -3969,29 +3974,38 @@ async function renderTodayMainPage() {
   $('todayMainCards').innerHTML = pastData.map((d, idx) => {
     const { year, yearsBack, targetDate, analysis } = d;
     const weather = weatherResults[idx];
-    const targetDow = new Date(targetDate).getDay();
+    const targetDow = new Date(targetDate + 'T12:00:00').getDay();
 
     if (!analysis) {
-      return `
-        <div class="today-nodata-card">
-          <strong style="color:var(--ink-dim)">${year}년</strong> &nbsp;·&nbsp; ${targetDate} (${DOW_KO[targetDow]}) &nbsp;·&nbsp; 데이터 없음
-        </div>`;
+      return `<div class="today-nodata-card">${yearsBack}년 전 <strong>${year}년</strong> · ${targetDate} (${DOW_KO[targetDow]}) · 데이터 없음</div>`;
     }
 
-    const weatherBlock = weather.icon !== '—' ? `
-      <div style="text-align:right;">
+    const weatherBlock = (weather && weather.icon !== '—') ? `
+      <div style="text-align:right">
         <div class="today-main-weather">${weather.icon}</div>
         ${weather.tmax != null ? `<div class="today-main-weather-temp">${weather.tmax}° / ${weather.tmin}°</div>` : ''}
       </div>` : '';
 
-    const menusBlock = analysis.top5.length > 0 ? `
+    const totalRev = analysis.revenue;
+    const cardPct  = totalRev > 0 ? Math.round((analysis.card||0) / totalRev * 100) : 0;
+    const cashPct  = totalRev > 0 ? Math.round((analysis.cash||0) / totalRev * 100) : 0;
+    const easyPct  = totalRev > 0 ? Math.round((analysis.easy||0) / totalRev * 100) : 0;
+
+    const payBlock = (cardPct + cashPct + easyPct) > 0 ? `
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+        ${cardPct > 0 ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim)">💳 ${cardPct}%</span>` : ''}
+        ${cashPct > 0 ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim)">💵 ${cashPct}%</span>` : ''}
+        ${easyPct > 0 ? `<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-dim)">📱 ${easyPct}%</span>` : ''}
+      </div>` : '';
+
+    const menusBlock = analysis.top5 && analysis.top5.length > 0 ? `
       <div class="today-main-menus">
         <div class="today-main-menus-label">탑 메뉴</div>
         ${analysis.top5.map((m, i) => `
           <div class="today-main-menu-item">
             <div class="today-main-menu-left">
               <span class="today-main-menu-rank">${RANK[i]}</span>
-              <span class="today-main-menu-name">${escapeHtml(m.name)}</span>
+              <span class="today-main-menu-name">${m.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
             </div>
             <span class="today-main-menu-amt">${m.amt.toLocaleString()}원</span>
           </div>`).join('')}
@@ -4001,7 +4015,7 @@ async function renderTodayMainPage() {
       <div class="today-main-card">
         <div class="today-main-card-header">
           <div>
-            <div class="today-main-year">${year}년 · ${yearsBack}년 전</div>
+            <div class="today-main-year">${yearsBack}년 전 · ${year}년</div>
             <div class="today-main-date-label">${targetDate} (${DOW_KO[targetDow]})</div>
           </div>
           ${weatherBlock}
@@ -4020,10 +4034,23 @@ async function renderTodayMainPage() {
             <div class="today-main-stat-label">첫 주문</div>
             <div class="today-main-stat-value">${analysis.firstOrder || '—'}</div>
           </div>
+          <div class="today-main-stat">
+            <div class="today-main-stat-label">마지막</div>
+            <div class="today-main-stat-value">${analysis.lastOrder || '—'}</div>
+          </div>
+          <div class="today-main-stat">
+            <div class="today-main-stat-label">피크</div>
+            <div class="today-main-stat-value">${analysis.peakHour != null ? analysis.peakHour + '시' : '—'}</div>
+          </div>
+          <div class="today-main-stat">
+            <div class="today-main-stat-label">영업시간</div>
+            <div class="today-main-stat-value">${analysis.openHours || '—'}</div>
+          </div>
         </div>
+        ${payBlock}
         ${menusBlock}
       </div>`;
-  }).join('') || '<div class="today-nodata-card">과거 데이터가 없습니다</div>';
+  }).join('') || '<div class="today-nodata-card">비교할 과거 데이터가 없습니다</div>';
 }
 
 async function openTodayModal() {
