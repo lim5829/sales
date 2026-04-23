@@ -1922,17 +1922,13 @@ async function dbClear(store) {
 
 // 앱 시작 시 GitHub에서 최신 데이터 당겨오기
 async function ghSyncAll() {
-  showStatus('GitHub에서 데이터 동기화 중…', 'info', true);
   try {
     await ghPull('records');
     await ghPull('files');
     await ghPull('settings');
-    hideStatus();
-    toast('✓ 동기화 완료', 'success');
   } catch (e) {
-    hideStatus();
-    // 오프라인이거나 파일이 없으면 캐시 사용
     console.warn('GitHub sync failed, using cache:', e.message);
+    throw e;
   }
 }
 
@@ -3352,11 +3348,22 @@ function setupAuthEvents() {
 
 // 앱 초기화 (토큰 인증 후 호출)
 async function initApp() {
-  // 로컬 캐시 먼저 표시 (빠름)
+  // 로컬 캐시 먼저 빠르게 표시
   await loadSettings();
   await refreshAll();
-  // 백그라운드에서 GitHub 동기화
-  ghSyncAll().then(() => refreshAll()).catch(() => {});
+  // 앱 열 때마다 GitHub에서 최신 데이터 자동 동기화
+  try {
+    const prev = allRecords.length;
+    await ghSyncAll();
+    await refreshAll();
+    // 새 데이터가 있을 때만 토스트 표시
+    if (allRecords.length !== prev) {
+      toast(`↑ ${allRecords.length - prev > 0 ? '+' : ''}${allRecords.length - prev}건 동기화됨`, 'success');
+    }
+  } catch (e) {
+    // 오프라인이거나 실패해도 캐시로 동작
+    console.warn('GitHub sync skipped:', e.message);
+  }
 }
 
 // 설정 모달 계정 정보 업데이트
@@ -3388,8 +3395,18 @@ function setupEvents() {
   // 수동 동기화
   $('btnSync') && $('btnSync').addEventListener('click', async () => {
     closeModal('settingsModal');
-    await ghSyncAll();
-    await refreshAll();
+    showStatus('GitHub 동기화 중…', 'info', true);
+    try {
+      const prev = allRecords.length;
+      await ghSyncAll();
+      await refreshAll();
+      hideStatus();
+      const diff = allRecords.length - prev;
+      toast(diff > 0 ? `✓ ${diff}건 새로 추가됨` : '✓ 이미 최신 상태', 'success');
+    } catch (e) {
+      hideStatus();
+      toast('❌ 동기화 실패: ' + e.message, 'error');
+    }
   });
 
   // 빈 상태에서 업로드 버튼 → 최근 목록도 로드
