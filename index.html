@@ -2346,11 +2346,31 @@ async function ghPull(store) {
   const path = `${window._gh.dataPath}/${store}.json`;
   const file = await ghGet(path);
   if (!file) return [];
-  const text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+
+  let text;
+  // 파일이 크면 (1MB+) GitHub API가 content를 생략하고 download_url만 줌
+  if (file.content) {
+    text = decodeURIComponent(escape(atob(file.content.replace(/\n/g, ''))));
+  } else if (file.download_url) {
+    const r = await fetch(file.download_url);
+    text = await r.text();
+  } else {
+    throw new Error('GitHub 파일 내용을 가져올 수 없습니다');
+  }
+
   const items = JSON.parse(text);
-  // 캐시 갱신
+
+  // IndexedDB 갱신 (한 번에 처리)
   await idbClear(store);
-  for (const item of items) await idbPut(store, item);
+  const keyPath = store === 'settings' ? 'key' : (store === 'files' ? 'name' : 'id');
+  await new Promise((res, rej) => {
+    const tx = _idb.transaction(store, 'readwrite');
+    const s = tx.objectStore(store);
+    items.forEach(item => s.put(item));
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+
   return items;
 }
 
@@ -2358,7 +2378,33 @@ async function ghPull(store) {
 async function ghPush(store) {
   const items = await idbGetAll(store);
   const path = `${window._gh.dataPath}/${store}.json`;
-  await ghPut(path, items, `update ${store} - ${new Date().toISOString().slice(0,16)}`);
+  const json = JSON.stringify(items, null, 0);
+
+  // btoa는 멀티바이트 문자에서 실패 → TextEncoder 사용
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  const base64 = btoa(binary);
+
+  // SHA 가져오기
+  const existing = await ghGet(path);
+  const body = {
+    message: `update ${store} - ${new Date().toISOString().slice(0,16)}`,
+    content: base64,
+    branch: window._gh.branch,
+  };
+  if (existing) body.sha = existing.sha;
+
+  const url = `https://api.github.com/repos/${window._gh.owner}/${window._gh.repo}/contents/${path}`;
+  const r = await fetch(url, { method: 'PUT', headers: ghHeaders(), body: JSON.stringify(body) });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(`GitHub PUT 실패: ${r.status} ${err.message || ''}`);
+  }
+  return r.json();
 }
 
 // ---- 공개 DB API (기존 코드가 호출하는 인터페이스 유지) ----
