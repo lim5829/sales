@@ -1293,12 +1293,94 @@
   .yl-chart-wrap {
     width: 100%;
     overflow-x: auto;
+    position: relative;
   }
   .yl-chart {
     width: 100%;
     min-width: 320px;
     height: auto;
     display: block;
+  }
+  .yl-hit {
+    transition: opacity 0.15s;
+  }
+  .yl-hit.active {
+    opacity: 1;
+  }
+
+  /* 꺾은선 차트 툴팁 */
+  .yl-tooltip {
+    position: absolute;
+    background: #09090b;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: var(--r-md);
+    font-family: 'Pretendard', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 10;
+    min-width: 140px;
+    white-space: nowrap;
+    animation: yltFadeIn 0.15s ease;
+  }
+  @keyframes yltFadeIn {
+    from { opacity: 0; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .yl-tooltip::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    left: var(--arrow-left, 50%);
+    transform: translateX(-50%);
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+  }
+  .yl-tooltip[data-arrow="bottom"]::before {
+    bottom: -5px;
+    border-top: 5px solid #09090b;
+  }
+  .yl-tooltip[data-arrow="top"]::before {
+    top: -5px;
+    border-bottom: 5px solid #09090b;
+  }
+  .ylt-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+  }
+  .ylt-revenue {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ylt-revenue span {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  .ylt-meta {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.75);
+    flex-wrap: wrap;
+    font-weight: 500;
+  }
+  .ylt-nodata {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-top: 2px;
   }
   .year-bar-track {
     flex: 1;
@@ -4780,6 +4862,7 @@ async function renderTodayMainPage() {
   const chartData = [...pastData].sort((a, b) => a.year - b.year);
   $('yearBarRows').innerHTML = buildYearLineSvg(chartData)
     || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
+  attachYearLineTooltip();
 }
 
 function buildYearLineSvg(chartData) {
@@ -4854,6 +4937,7 @@ function buildYearLineSvg(chartData) {
   }
 
   // 포인트 & X축 라벨
+  const points = []; // 툴팁 데이터
   chartData.forEach((d, i) => {
     const x = xPos(i);
     const rev = d.analysis?.revenue || 0;
@@ -4862,9 +4946,8 @@ function buildYearLineSvg(chartData) {
 
     if (rev > 0) {
       const y = yPos(rev);
-      // 포인트
+      // 포인트 (데이터 속성으로 인덱스만 저장)
       if (isCurrent) {
-        // 현재 연도: 큰 원 + 금액 라벨
         svg += `<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="#0047AB" stroke-width="2.5"/>`;
         svg += `<circle cx="${x}" cy="${y}" r="3" fill="#0047AB"/>`;
         // 금액 라벨 (위쪽)
@@ -4875,9 +4958,14 @@ function buildYearLineSvg(chartData) {
       } else {
         svg += `<circle cx="${x}" cy="${y}" r="4.5" fill="#fff" stroke="#0047AB" stroke-width="2"/>`;
       }
+      points.push({ x, y, rev, d, hasData: true });
+      // 히트 영역 (투명한 큰 원) - 클릭/호버 받음
+      svg += `<circle class="yl-hit" cx="${x}" cy="${y}" r="16" fill="transparent" data-idx="${i}" style="cursor:pointer;"/>`;
     } else {
-      // 데이터 없는 포인트: 회색 점
+      // 데이터 없는 포인트
       svg += `<circle cx="${x}" cy="${PT + ch - 1}" r="3" fill="#d4d4d8"/>`;
+      points.push({ x, y: PT + ch - 1, rev: 0, d, hasData: false });
+      svg += `<circle class="yl-hit" cx="${x}" cy="${PT + ch - 10}" r="14" fill="transparent" data-idx="${i}" style="cursor:pointer;"/>`;
     }
 
     // X축 라벨 (연도)
@@ -4890,7 +4978,135 @@ function buildYearLineSvg(chartData) {
   });
 
   svg += `</svg>`;
-  return `<div class="yl-chart-wrap">${svg}</div>`;
+
+  // 툴팁 데이터를 JSON으로 직렬화해서 attach
+  const pointsData = points.map(p => ({
+    x: p.x, y: p.y, rev: p.rev, hasData: p.hasData,
+    year: p.d.year, targetDate: p.d.targetDate,
+    dow: DOW_KO[new Date(p.d.targetDate + 'T12:00:00').getDay()],
+    count: p.d.analysis?.count || 0,
+    avgTx: p.d.analysis?.avgTx || 0,
+    peakHour: p.d.analysis?.peakHour,
+    isCurrent: p.d.yearsBack === 0
+  }));
+
+  return `
+    <div class="yl-chart-wrap" data-points='${JSON.stringify(pointsData).replace(/'/g, "&apos;")}'>
+      ${svg}
+      <div class="yl-tooltip" style="display:none;"></div>
+    </div>`;
+}
+
+function attachYearLineTooltip() {
+  const wrap = document.querySelector('#yearBarRows .yl-chart-wrap');
+  if (!wrap) return;
+
+  const svg = wrap.querySelector('svg.yl-chart');
+  const tooltip = wrap.querySelector('.yl-tooltip');
+  const pointsRaw = wrap.getAttribute('data-points');
+  if (!svg || !tooltip || !pointsRaw) return;
+
+  let points;
+  try {
+    points = JSON.parse(pointsRaw.replace(/&apos;/g, "'"));
+  } catch (e) {
+    return;
+  }
+
+  const hits = svg.querySelectorAll('.yl-hit');
+  let activeIdx = null;
+
+  function showTooltip(idx) {
+    const p = points[idx];
+    if (!p) return;
+
+    const dateLabel = p.targetDate.replace(/-/g, '.');
+    const body = p.hasData
+      ? `
+        <div class="ylt-date">${dateLabel} ${p.dow}</div>
+        <div class="ylt-revenue">${p.rev.toLocaleString()}<span>원</span></div>
+        <div class="ylt-meta">
+          <span>${p.count.toLocaleString()}건</span>
+          <span>건단가 ${p.avgTx.toLocaleString()}원</span>
+          ${p.peakHour != null ? `<span>피크 ${p.peakHour}시</span>` : ''}
+        </div>
+      `
+      : `
+        <div class="ylt-date">${dateLabel} ${p.dow}</div>
+        <div class="ylt-nodata">데이터 없음</div>
+      `;
+
+    tooltip.innerHTML = body;
+    tooltip.style.display = 'block';
+
+    // SVG 좌표를 실제 픽셀 좌표로 변환
+    const svgRect = svg.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    const scaleX = svgRect.width / vb.width;
+    const scaleY = svgRect.height / vb.height;
+
+    const pxX = (svgRect.left - wrapRect.left) + p.x * scaleX;
+    const pxY = (svgRect.top - wrapRect.top) + p.y * scaleY;
+
+    // 툴팁 위치: 포인트 위쪽, 좌우 경계 넘지 않게
+    const tipW = tooltip.offsetWidth;
+    const tipH = tooltip.offsetHeight;
+    const wrapW = wrap.clientWidth;
+
+    let left = pxX - tipW / 2;
+    left = Math.max(4, Math.min(left, wrapW - tipW - 4));
+
+    let top = pxY - tipH - 14;
+    let arrowSide = 'bottom';
+    if (top < 4) {
+      top = pxY + 18;
+      arrowSide = 'top';
+    }
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = top + 'px';
+
+    // 화살표 위치 계산 (툴팁 기준 left 위치)
+    const arrowLeft = pxX - left;
+    tooltip.style.setProperty('--arrow-left', arrowLeft + 'px');
+    tooltip.setAttribute('data-arrow', arrowSide);
+
+    // 활성 포인트 하이라이트
+    hits.forEach((h, i) => h.classList.toggle('active', i === idx));
+    activeIdx = idx;
+  }
+
+  function hideTooltip() {
+    tooltip.style.display = 'none';
+    hits.forEach(h => h.classList.remove('active'));
+    activeIdx = null;
+  }
+
+  hits.forEach((hit) => {
+    const idx = parseInt(hit.getAttribute('data-idx'));
+
+    // 클릭 (모바일/데스크톱)
+    hit.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (activeIdx === idx) {
+        hideTooltip();
+      } else {
+        showTooltip(idx);
+      }
+    });
+
+    // 호버 (데스크톱)
+    hit.addEventListener('mouseenter', () => showTooltip(idx));
+    hit.addEventListener('mouseleave', () => {
+      // 클릭으로 열린 게 아니라면 닫기 - 여기선 간단히 호버시만 닫음
+      hideTooltip();
+    });
+  });
+
+  // 바깥 클릭 시 닫기
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) hideTooltip();
+  }, { once: true });
 }
 async function openTodayModal() {
   openModal('todayModal');
