@@ -1285,11 +1285,12 @@
     height: 100%;
     background: var(--accent);
     border-radius: 99px;
-    opacity: 0.55;
+    opacity: 0.5;
     transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
   }
   .year-bar-fill.current { opacity: 1; }
   .year-bar-fill.no-data { background: var(--line); opacity: 1; }
+  .year-bar-fill.current.no-data { background: var(--accent-soft); opacity: 1; }
   .year-bar-val {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
@@ -1425,6 +1426,35 @@
     box-shadow: 0 4px 16px rgba(0, 71, 171, 0.15);
     color: #fff;
   }
+
+  /* 선택한 날 - 데이터 없음 빈 상태 */
+  .sd-empty-block {
+    background: var(--bg-soft);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r-xl);
+    padding: 28px 20px;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .sd-empty-icon {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 10px;
+    color: var(--ink-faint);
+  }
+  .sd-empty-icon svg { width: 100%; height: 100%; }
+  .sd-empty-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-dim);
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .sd-empty-sub {
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
   .sd-revenue {
     font-family: 'Pretendard', sans-serif;
     font-size: 40px;
@@ -1554,30 +1584,38 @@
     color: var(--ink);
     letter-spacing: -0.01em;
   }
-  .hc-mode {
+  .hc-year-select-wrap {
     display: flex;
-    background: var(--bg-muted);
-    padding: 2px;
-    border-radius: var(--r-sm);
-    gap: 1px;
+    align-items: center;
+    gap: 6px;
   }
-  .hc-mode-btn {
-    padding: 5px 10px;
-    background: transparent;
-    border: none;
+  .hc-year-label {
     font-size: 11px;
-    color: var(--ink-dim);
-    cursor: pointer;
-    border-radius: 4px;
-    font-weight: 500;
-    transition: all 0.15s;
-  }
-  .hc-mode-btn.active {
-    background: var(--card);
-    color: var(--ink);
-    box-shadow: var(--shadow-sm);
+    color: var(--ink-faint);
     font-weight: 600;
+    letter-spacing: 0.02em;
   }
+  .hc-year-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--bg-muted);
+    border: 1px solid transparent;
+    color: var(--ink);
+    font-family: 'Pretendard', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 24px 5px 10px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M2 4l3 3 3-3' stroke='%2352525b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+  }
+  .hc-year-select:hover { background-color: var(--line); }
+  .hc-year-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+  .hc-year-select:disabled { opacity: 0.4; cursor: not-allowed; }
   .hc-legend {
     display: flex;
     gap: 14px;
@@ -2241,8 +2279,6 @@
             <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
           </div>
         </div>
-        <!-- 연도별 카드 -->
-        <div id="todayMainCards"></div>
       </div>
     </div>
 
@@ -4403,8 +4439,7 @@ function getTodayPageDateStr() {
 }
 
 // 시간대별 비교 차트 상태
-let hourlyCompareMode = 'week'; // 'week' | 'year'
-let hourlyChartStyle = 'bar';   // 'bar' | 'stack'
+let hourlyCompareYearsBack = null; // null이면 자동(가장 최근 과거 연도), 숫자면 명시적
 
 function renderHourlyCompare(todayStr, selectedAnalysis) {
   const block = $('hourlyCompareBlock');
@@ -4419,18 +4454,19 @@ function renderHourlyCompare(todayStr, selectedAnalysis) {
 
   const baseDate = new Date(todayStr + 'T12:00:00');
   const dow = baseDate.getDay();
+  const currentYear = baseDate.getFullYear();
 
-  // 비교 대상 날짜 결정
-  let compareStr, compareLabel;
-  if (hourlyCompareMode === 'week') {
-    const weekAgo = new Date(baseDate);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    compareStr = weekAgo.toISOString().slice(0, 10);
-    compareLabel = '전주';
-  } else {
-    compareStr = getSameDayOfWeek(todayStr, 1);
-    compareLabel = '전년';
+  // 비교 가능한 과거 연도 목록 (데이터 있는 연도 중 현재보다 과거)
+  const availableYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).filter(y => y < currentYear).sort().reverse();
+
+  // 기본 선택: 가장 최근 과거 연도
+  if (hourlyCompareYearsBack === null || !availableYears.includes(currentYear - hourlyCompareYearsBack)) {
+    hourlyCompareYearsBack = availableYears.length > 0 ? currentYear - availableYears[0] : 1;
   }
+
+  const compareYear = currentYear - hourlyCompareYearsBack;
+  const compareStr = getSameDayOfWeek(todayStr, hourlyCompareYearsBack);
   const compareAnalysis = analyzeDayRecords(compareStr);
 
   // 시간 범위 결정 (두 데이터 모두 고려)
@@ -4452,26 +4488,36 @@ function renderHourlyCompare(todayStr, selectedAnalysis) {
   const aData = hours.map(h => selectedAnalysis.hourRev[h] || 0);
   const bData = hours.map(h => compareAnalysis && compareAnalysis.hourRev ? (compareAnalysis.hourRev[h] || 0) : 0);
 
-  // 오늘/선택일 라벨
+  // 라벨
   const todayDow = DOW_KO[dow];
   const compareDow = DOW_KO[new Date(compareStr + 'T12:00:00').getDay()];
-  const todayLabel = todayStr === new Date().toISOString().slice(0,10) ? '오늘' : '선택일';
-  const aLegend = `${todayLabel} (${todayStr.slice(5).replace('-','-')} ${todayDow})`;
-  const bLegend = `${compareLabel} (${compareStr.slice(5).replace('-','-')} ${compareDow})`;
+  const todayLabel = todayStr === new Date().toISOString().slice(0, 10) ? '오늘' : '선택일';
+  const aLegend = `${todayLabel} (${todayStr.slice(5)} ${todayDow})`;
+  const bLegend = `${compareYear}년 (${compareStr.slice(5)} ${compareDow})`;
+
+  // 연도 콤보박스
+  const yearOptions = availableYears.length > 0
+    ? availableYears.map(y => {
+        const yb = currentYear - y;
+        return `<option value="${yb}" ${yb === hourlyCompareYearsBack ? 'selected' : ''}>${y}년</option>`;
+      }).join('')
+    : '<option disabled selected>-</option>';
 
   // SVG 차트 생성
   const hasCompare = compareAnalysis && compareAnalysis.revenue > 0;
   const chartSvg = hasCompare
-    ? buildHourlyCompareSvg(hours, aData, bData, hourlyChartStyle)
-    : buildHourlyCompareSvg(hours, aData, null, hourlyChartStyle);
+    ? buildHourlyCompareSvg(hours, aData, bData)
+    : buildHourlyCompareSvg(hours, aData, null);
 
   block.innerHTML = `
     <div class="hc-block">
       <div class="hc-header">
-        <div class="hc-title">시간대별 비교 (${todayLabel} vs ${compareLabel})</div>
-        <div class="hc-mode">
-          <button class="hc-mode-btn ${hourlyCompareMode === 'week' ? 'active' : ''}" onclick="setHourlyMode('week')">전주</button>
-          <button class="hc-mode-btn ${hourlyCompareMode === 'year' ? 'active' : ''}" onclick="setHourlyMode('year')">전년</button>
+        <div class="hc-title">시간대별 비교</div>
+        <div class="hc-year-select-wrap">
+          <span class="hc-year-label">vs</span>
+          <select class="hc-year-select" onchange="setHourlyYear(this.value)" ${availableYears.length === 0 ? 'disabled' : ''}>
+            ${yearOptions}
+          </select>
         </div>
       </div>
       ${hasCompare ? `
@@ -4481,22 +4527,22 @@ function renderHourlyCompare(todayStr, selectedAnalysis) {
       </div>` : `
       <div class="hc-legend">
         <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${aLegend}</div>
-        <div class="hc-legend-item" style="color:var(--ink-faint);">${compareLabel} 데이터 없음</div>
+        <div class="hc-legend-item" style="color:var(--ink-faint);">${compareYear}년 데이터 없음</div>
       </div>`}
       <div class="hc-chart-wrap">${chartSvg}</div>
     </div>`;
   block.style.display = '';
 }
 
-function setHourlyMode(mode) {
-  hourlyCompareMode = mode;
+function setHourlyYear(yearsBack) {
+  hourlyCompareYearsBack = parseInt(yearsBack);
   const todayStr = getTodayPageDateStr();
   const selectedAnalysis = analyzeDayRecords(todayStr);
   renderHourlyCompare(todayStr, selectedAnalysis);
 }
 
 // SVG 시간대 비교 차트 생성
-function buildHourlyCompareSvg(hours, aData, bData, style) {
+function buildHourlyCompareSvg(hours, aData, bData) {
   const W = 720, H = 260;
   const PL = 48, PR = 12, PT = 12, PB = 34; // padding
   const cw = W - PL - PR;
@@ -4537,7 +4583,7 @@ function buildHourlyCompareSvg(hours, aData, bData, style) {
   svg += `<text x="${PL - 40}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
 
   // 막대
-  if (style === 'bar' && hasB) {
+  if (hasB) {
     // 이중 막대
     const barW = Math.max(2, (groupW - 6) / 2 - 1);
     hours.forEach((h, i) => {
@@ -4551,7 +4597,7 @@ function buildHourlyCompareSvg(hours, aData, bData, style) {
         const barH = PT + ch - y;
         svg += `<rect x="${cx - barW - 1}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="1.5"/>`;
       }
-      // B (전주/전년) - 오른쪽
+      // B (비교 연도) - 오른쪽
       if (bV > 0) {
         const y = PT + yScale(bV);
         const barH = PT + ch - y;
@@ -4562,7 +4608,7 @@ function buildHourlyCompareSvg(hours, aData, bData, style) {
       svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="500">${h}시</text>`;
     });
   } else {
-    // 단일 막대 (비교 없거나 style이 stack일 때)
+    // 단일 막대 (비교 없을 때)
     const barW = Math.max(3, groupW - 6);
     hours.forEach((h, i) => {
       const cx = PL + groupW * i + groupW / 2;
@@ -4650,8 +4696,19 @@ async function renderTodayMainPage() {
       </div>`;
     sdBlock.style.display = '';
   } else {
-    sdBlock.style.display = 'none';
-    sdBlock.innerHTML = '';
+    // 데이터가 없는 경우 - 빈 상태 블록 표시
+    sdBlock.innerHTML = `
+      <div class="sd-empty-block">
+        <div class="sd-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
+            <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="sd-empty-title">${isToday ? '아직 매출 데이터가 없어요' : '이 날의 데이터가 없어요'}</div>
+        <div class="sd-empty-sub">${isToday ? 'POS 엑셀을 업로드하거나 수기로 입력해 주세요' : '데이터 관리에서 업로드할 수 있어요'}</div>
+      </div>`;
+    sdBlock.style.display = '';
   }
 
   // 시간대별 비교 차트 렌더링
@@ -4663,11 +4720,8 @@ async function renderTodayMainPage() {
 
   if (allRecords.length === 0) {
     $('yearBarRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
-    $('todayMainCards').innerHTML = '<div class="today-nodata-card">데이터가 없습니다</div>';
     return;
   }
-
-  $('todayMainCards').innerHTML = '<div class="today-loading"><span class="spinner"></span>분석 중…</div>';
 
   const currentYear = baseDate.getFullYear();
   const dataYears = [...new Set(allRecords.map(r => r.date.slice(0,4)))]
@@ -4698,31 +4752,6 @@ async function renderTodayMainPage() {
         <div class="year-bar-val ${isCurrent ? 'current' : ''}">${valText}</div>
       </div>`;
   }).join('') || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
-
-  // ─── 카드 렌더 (컴팩트 1행) ───
-  const cards = pastData.map(d => {
-    const { year, yearsBack, targetDate, analysis } = d;
-    const tdow = new Date(targetDate + 'T12:00:00').getDay();
-
-    if (!analysis) {
-      return `<div class="today-nodata-card">${year}년 · ${targetDate} (${DOW_KO[tdow]}) · 데이터 없음</div>`;
-    }
-
-    return `
-      <div class="today-main-card">
-        <div>
-          <div class="tmc-year">${year}년</div>
-          <div class="tmc-date">${targetDate.slice(5)} (${DOW_KO[tdow]})</div>
-        </div>
-        <div class="tmc-revenue">${analysis.revenue.toLocaleString()}<span class="u">원</span></div>
-        <div class="tmc-meta">건단가 <span>${analysis.avgTx.toLocaleString()}</span></div>
-        <div class="tmc-meta">피크 <span>${analysis.peakHour != null ? analysis.peakHour + '시' : '—'}</span></div>
-      </div>`;
-  }).join('');
-
-  $('todayMainCards').innerHTML = cards
-    ? `<div class="today-cards-wrap">${cards}</div>`
-    : '<div class="today-nodata-card" style="border-radius:4px;border:1px solid var(--line);">비교할 과거 데이터가 없습니다</div>';
 }
 async function openTodayModal() {
   openModal('todayModal');
