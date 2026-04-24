@@ -1271,9 +1271,23 @@
     font-size: 11px;
     font-weight: 600;
     color: var(--ink-dim);
-    min-width: 32px;
+    min-width: 96px;
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    white-space: nowrap;
   }
   .year-bar-label.current { color: var(--accent); font-weight: 700; }
+  .year-bar-label .ybl-date {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .year-bar-label .ybl-dow {
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .year-bar-label.current .ybl-dow { color: var(--accent); opacity: 0.75; }
   .year-bar-track {
     flex: 1;
     height: 8px;
@@ -1296,9 +1310,10 @@
     font-size: 11px;
     font-weight: 600;
     color: var(--ink-dim);
-    min-width: 90px;
+    min-width: 80px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
   .year-bar-val.current { color: var(--accent); font-weight: 700; }
 
@@ -4500,8 +4515,8 @@ function renderHourlyCompare(todayStr, selectedAnalysis) {
   const todayDow = DOW_KO[dow];
   const compareDow = DOW_KO[new Date(compareStr + 'T12:00:00').getDay()];
   const todayLabel = todayStr === new Date().toISOString().slice(0, 10) ? '오늘' : '선택일';
-  const aLegend = `${todayLabel} (${todayStr.slice(5)} ${todayDow})`;
-  const bLegend = `${compareYear}년 (${compareStr.slice(5)} ${compareDow})`;
+  const aLegend = `${todayLabel} (${todayStr.replace(/-/g, '.')} ${todayDow})`;
+  const bLegend = `${compareYear}년 (${compareStr.replace(/-/g, '.')} ${compareDow})`;
 
   // 연도 콤보박스
   const yearOptions = availableYears.length > 0
@@ -4756,9 +4771,13 @@ async function renderTodayMainPage() {
     const valText = rev > 0 ? rev.toLocaleString() + '원' : '—';
     const tdow = new Date(d.targetDate + 'T12:00:00').getDay();
     const isCurrent = d.yearsBack === 0;
+    const dateLabel = d.targetDate.replace(/-/g, '.');
     return `
       <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[tdow]})">
-        <div class="year-bar-label ${isCurrent ? 'current' : ''}">${d.year}</div>
+        <div class="year-bar-label ${isCurrent ? 'current' : ''}">
+          <span class="ybl-date">${dateLabel}</span>
+          <span class="ybl-dow">${DOW_KO[tdow]}</span>
+        </div>
         <div class="year-bar-track">
           <div class="year-bar-fill ${isCurrent ? 'current' : ''} ${rev > 0 ? '' : 'no-data'}" style="width:${pct}%"></div>
         </div>
