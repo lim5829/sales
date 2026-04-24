@@ -1532,6 +1532,83 @@
     font-weight: 500;
   }
 
+  /* ─── 시간대별 비교 차트 (오늘 vs 비교일) ─── */
+  .hc-block {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow-sm);
+  }
+  .hc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+  .hc-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .hc-mode {
+    display: flex;
+    background: var(--bg-muted);
+    padding: 2px;
+    border-radius: var(--r-sm);
+    gap: 1px;
+  }
+  .hc-mode-btn {
+    padding: 5px 10px;
+    background: transparent;
+    border: none;
+    font-size: 11px;
+    color: var(--ink-dim);
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .hc-mode-btn.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: var(--shadow-sm);
+    font-weight: 600;
+  }
+  .hc-legend {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .hc-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--ink-dim);
+    font-weight: 500;
+  }
+  .hc-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+  .hc-legend-dot.a { background: var(--accent); }
+  .hc-legend-dot.b { background: #c9d8f0; }
+  .hc-chart-wrap { width: 100%; overflow-x: auto; }
+  .hc-chart { width: 100%; min-width: 360px; height: auto; display: block; }
+  .hc-empty {
+    text-align: center;
+    padding: 20px 12px;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
   /* 오늘 탭 컴팩트 카드 */
   .today-main-card {
     display: grid;
@@ -2155,6 +2232,8 @@
         </div>
         <!-- 선택한 날 매출 (데이터 있을 때만) -->
         <div id="selectedDayBlock" style="display:none"></div>
+        <!-- 시간대별 비교 차트 (데이터 있을 때만) -->
+        <div id="hourlyCompareBlock" style="display:none"></div>
         <!-- 연도별 바 차트 -->
         <div class="year-bar-chart" id="yearBarChart">
           <div class="year-bar-title">같은 요일 연도별 매출 비교</div>
@@ -4309,7 +4388,7 @@ function analyzeDayRecords(date) {
     .slice(0, 5)
     .map(([name, cnt]) => ({ name, amt: cnt }));
 
-  return { revenue, count, avgTx, firstOrder, lastOrder, openHours, peakHour, card, cash, easy, top5 };
+  return { revenue, count, avgTx, firstOrder, lastOrder, openHours, peakHour, card, cash, easy, top5, hourRev };
 }
 
 // 오늘 탭 메인 페이지 렌더링
@@ -4321,6 +4400,186 @@ function getTodayPageDateStr() {
     return new Date().toISOString().slice(0, 10);
   }
   return todayPageDate;
+}
+
+// 시간대별 비교 차트 상태
+let hourlyCompareMode = 'week'; // 'week' | 'year'
+let hourlyChartStyle = 'bar';   // 'bar' | 'stack'
+
+function renderHourlyCompare(todayStr, selectedAnalysis) {
+  const block = $('hourlyCompareBlock');
+  if (!block) return;
+
+  // 데이터 없으면 숨김
+  if (!selectedAnalysis || !selectedAnalysis.hourRev || Object.keys(selectedAnalysis.hourRev).length === 0) {
+    block.style.display = 'none';
+    block.innerHTML = '';
+    return;
+  }
+
+  const baseDate = new Date(todayStr + 'T12:00:00');
+  const dow = baseDate.getDay();
+
+  // 비교 대상 날짜 결정
+  let compareStr, compareLabel;
+  if (hourlyCompareMode === 'week') {
+    const weekAgo = new Date(baseDate);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    compareStr = weekAgo.toISOString().slice(0, 10);
+    compareLabel = '전주';
+  } else {
+    compareStr = getSameDayOfWeek(todayStr, 1);
+    compareLabel = '전년';
+  }
+  const compareAnalysis = analyzeDayRecords(compareStr);
+
+  // 시간 범위 결정 (두 데이터 모두 고려)
+  const allHours = new Set();
+  Object.keys(selectedAnalysis.hourRev).forEach(h => allHours.add(parseInt(h)));
+  if (compareAnalysis && compareAnalysis.hourRev) {
+    Object.keys(compareAnalysis.hourRev).forEach(h => allHours.add(parseInt(h)));
+  }
+  if (allHours.size === 0) {
+    block.style.display = 'none';
+    return;
+  }
+
+  const minH = Math.min(...allHours);
+  const maxH = Math.max(...allHours);
+  const hours = [];
+  for (let h = minH; h <= maxH; h++) hours.push(h);
+
+  const aData = hours.map(h => selectedAnalysis.hourRev[h] || 0);
+  const bData = hours.map(h => compareAnalysis && compareAnalysis.hourRev ? (compareAnalysis.hourRev[h] || 0) : 0);
+
+  // 오늘/선택일 라벨
+  const todayDow = DOW_KO[dow];
+  const compareDow = DOW_KO[new Date(compareStr + 'T12:00:00').getDay()];
+  const todayLabel = todayStr === new Date().toISOString().slice(0,10) ? '오늘' : '선택일';
+  const aLegend = `${todayLabel} (${todayStr.slice(5).replace('-','-')} ${todayDow})`;
+  const bLegend = `${compareLabel} (${compareStr.slice(5).replace('-','-')} ${compareDow})`;
+
+  // SVG 차트 생성
+  const hasCompare = compareAnalysis && compareAnalysis.revenue > 0;
+  const chartSvg = hasCompare
+    ? buildHourlyCompareSvg(hours, aData, bData, hourlyChartStyle)
+    : buildHourlyCompareSvg(hours, aData, null, hourlyChartStyle);
+
+  block.innerHTML = `
+    <div class="hc-block">
+      <div class="hc-header">
+        <div class="hc-title">시간대별 비교 (${todayLabel} vs ${compareLabel})</div>
+        <div class="hc-mode">
+          <button class="hc-mode-btn ${hourlyCompareMode === 'week' ? 'active' : ''}" onclick="setHourlyMode('week')">전주</button>
+          <button class="hc-mode-btn ${hourlyCompareMode === 'year' ? 'active' : ''}" onclick="setHourlyMode('year')">전년</button>
+        </div>
+      </div>
+      ${hasCompare ? `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${aLegend}</div>
+        <div class="hc-legend-item"><span class="hc-legend-dot b"></span>${bLegend}</div>
+      </div>` : `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${aLegend}</div>
+        <div class="hc-legend-item" style="color:var(--ink-faint);">${compareLabel} 데이터 없음</div>
+      </div>`}
+      <div class="hc-chart-wrap">${chartSvg}</div>
+    </div>`;
+  block.style.display = '';
+}
+
+function setHourlyMode(mode) {
+  hourlyCompareMode = mode;
+  const todayStr = getTodayPageDateStr();
+  const selectedAnalysis = analyzeDayRecords(todayStr);
+  renderHourlyCompare(todayStr, selectedAnalysis);
+}
+
+// SVG 시간대 비교 차트 생성
+function buildHourlyCompareSvg(hours, aData, bData, style) {
+  const W = 720, H = 260;
+  const PL = 48, PR = 12, PT = 12, PB = 34; // padding
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+
+  const n = hours.length;
+  const groupW = cw / n;
+  const hasB = bData != null;
+
+  const maxVal = Math.max(
+    ...aData,
+    ...(hasB ? bData : [0]),
+    1
+  );
+  // y축 적절한 최대값 (1000원 단위 올림)
+  const niceMax = (v => {
+    if (v <= 10000) return Math.ceil(v / 2000) * 2000;
+    if (v <= 50000) return Math.ceil(v / 10000) * 10000;
+    if (v <= 100000) return Math.ceil(v / 20000) * 20000;
+    if (v <= 500000) return Math.ceil(v / 50000) * 50000;
+    return Math.ceil(v / 100000) * 100000;
+  })(maxVal);
+
+  const yScale = v => ch - (v / niceMax) * ch;
+
+  let svg = `<svg class="hc-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+
+  // Y축 그리드 (4단계)
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = (niceMax / steps) * i;
+    const y = PT + yScale(v);
+    svg += `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#e4e4e7" stroke-width="1" stroke-dasharray="${i === 0 ? '0' : '2,2'}"/>`;
+    const label = v >= 1000 ? (v / 1000) + 'K' : v.toString();
+    svg += `<text x="${PL - 6}" y="${y + 3}" text-anchor="end" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${label}</text>`;
+  }
+  // Y축 단위
+  svg += `<text x="${PL - 40}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
+
+  // 막대
+  if (style === 'bar' && hasB) {
+    // 이중 막대
+    const barW = Math.max(2, (groupW - 6) / 2 - 1);
+    hours.forEach((h, i) => {
+      const cx = PL + groupW * i + groupW / 2;
+      const aV = aData[i];
+      const bV = bData[i];
+
+      // A (오늘) - 왼쪽
+      if (aV > 0) {
+        const y = PT + yScale(aV);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx - barW - 1}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="1.5"/>`;
+      }
+      // B (전주/전년) - 오른쪽
+      if (bV > 0) {
+        const y = PT + yScale(bV);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx + 1}" y="${y}" width="${barW}" height="${barH}" fill="#c9d8f0" rx="1.5"/>`;
+      }
+
+      // X축 라벨 (시간)
+      svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="500">${h}시</text>`;
+    });
+  } else {
+    // 단일 막대 (비교 없거나 style이 stack일 때)
+    const barW = Math.max(3, groupW - 6);
+    hours.forEach((h, i) => {
+      const cx = PL + groupW * i + groupW / 2;
+      const aV = aData[i];
+
+      if (aV > 0) {
+        const y = PT + yScale(aV);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx - barW/2}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="2"/>`;
+      }
+
+      svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="500">${h}시</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+  return svg;
 }
 
 async function renderTodayMainPage() {
@@ -4394,6 +4653,9 @@ async function renderTodayMainPage() {
     sdBlock.style.display = 'none';
     sdBlock.innerHTML = '';
   }
+
+  // 시간대별 비교 차트 렌더링
+  renderHourlyCompare(todayStr, selectedAnalysis);
 
   // 바 차트 표시
   const chartEl = $('yearBarChart');
