@@ -1390,6 +1390,156 @@
     background: rgba(255, 255, 255, 0.35);
   }
 
+  /* 요약 - 다중 연도 라인 비교 카드 */
+  .myl-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .myl-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    gap: 10px;
+  }
+  .myl-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .myl-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .myl-chips {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .myl-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    border-radius: 99px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+    user-select: none;
+  }
+  .myl-chip:hover:not(.disabled) {
+    background: var(--bg-muted);
+    border-color: var(--ink-dim);
+  }
+  .myl-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .myl-chip.active .myl-chip-dot {
+    background: #fff;
+  }
+  .myl-chip.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg-muted);
+  }
+  .myl-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .myl-chart-wrap {
+    width: 100%;
+    overflow-x: auto;
+    position: relative;
+  }
+  .myl-chart {
+    width: 100%;
+    min-width: 360px;
+    height: auto;
+    display: block;
+  }
+  .myl-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* 라인 차트 툴팁 (다중 연도용) */
+  .myl-tooltip {
+    position: absolute;
+    background: #09090b;
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: var(--r-md);
+    font-family: 'Pretendard', sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 10;
+    min-width: 150px;
+    animation: yltFadeIn 0.15s ease;
+  }
+  .mylt-month {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .mylt-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 2px 0;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .mylt-row-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .mylt-row-val {
+    font-weight: 700;
+    color: #fff;
+  }
+  .mylt-row-val.empty { color: rgba(255, 255, 255, 0.4); font-weight: 500; }
+  .mylt-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
   /* ---------- 오늘 페이지 (메인) ---------- */
   .today-page {}
 
@@ -2673,6 +2823,8 @@
       <div id="summaryContent">
         <!-- 연간 누적 매출 카드 -->
         <div id="ytdRevenueCard"></div>
+        <!-- 다중 연도 월별 라인 비교 -->
+        <div id="multiYearLineCard"></div>
       </div>
     </div>
 
@@ -6378,6 +6530,325 @@ function renderYearYearChart(year) {
 // ═══════════════════════════════════════════════════════════
 function renderSummaryPage() {
   renderYtdRevenueCard();
+  renderMultiYearLineCard();
+}
+
+// 다중 연도 라인 차트 - 선택된 연도 상태 (Set)
+let mylSelectedYears = null;
+
+// 연도별 팔레트 (현재 연도에 가까울수록 진함)
+const YEAR_COLORS = {
+  0: '#0047AB',  // 올해 - 코발트 블루
+  1: '#10b981',  // 1년 전 - 그린
+  2: '#f97316',  // 2년 전 - 오렌지
+  3: '#8b5cf6',  // 3년 전 - 퍼플
+  4: '#06b6d4',  // 4년 전 - 시안
+  5: '#ec4899',  // 5년 전 - 핑크
+  6: '#eab308',  // 6년 전 - 옐로
+};
+
+function getYearColor(yearsBack) {
+  return YEAR_COLORS[yearsBack] || '#71717a';
+}
+
+// ─── 다중 연도 월별 라인 비교 카드 ───
+function renderMultiYearLineCard() {
+  const container = $('multiYearLineCard');
+  if (!container) return;
+
+  if (allRecords.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const currentYear = new Date().getFullYear();
+  // 데이터가 있는 연도 모두 (최근 → 과거 순)
+  const availableYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).sort((a, b) => b - a);
+
+  if (availableYears.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // 초기 선택: 최근 2개 연도 (기본 활성)
+  if (mylSelectedYears === null) {
+    mylSelectedYears = new Set(availableYears.slice(0, 2));
+  } else {
+    // 기존 선택 중 available 에서 사라진 것 제거
+    mylSelectedYears = new Set([...mylSelectedYears].filter(y => availableYears.includes(y)));
+    if (mylSelectedYears.size === 0 && availableYears.length > 0) {
+      mylSelectedYears.add(availableYears[0]);
+    }
+  }
+
+  // 칩 렌더링
+  const chipsHtml = availableYears.map(y => {
+    const yearsBack = currentYear - y;
+    const color = getYearColor(yearsBack);
+    const active = mylSelectedYears.has(y);
+    return `
+      <div class="myl-chip ${active ? 'active' : ''}"
+           data-year="${y}"
+           style="${active ? `background:${color}; border-color:${color};` : `color:${color};`}">
+        <span class="myl-chip-dot" style="background:${active ? '#fff' : color};"></span>
+        ${y}
+      </div>`;
+  }).join('');
+
+  // 각 선택된 연도의 월별 데이터 준비
+  const seriesList = [...mylSelectedYears]
+    .sort((a, b) => a - b) // 오래된 순으로 (진한 색이 위에 렌더되게)
+    .map(y => {
+      const yearsBack = currentYear - y;
+      const color = getYearColor(yearsBack);
+      // 월별 매출 (1~12)
+      const monthly = new Array(12).fill(0);
+      let hasData = false;
+      allRecords.forEach(r => {
+        if (r.date.startsWith(String(y))) {
+          const m = parseInt(r.date.slice(5, 7)) - 1;
+          monthly[m] += r.amount;
+          if (r.amount > 0) hasData = true;
+        }
+      });
+
+      // 이번 연도의 경우 미래 월은 null 처리 (아직 안 지난 달)
+      const isCurrentYear = y === currentYear;
+      const currentMonth = new Date().getMonth(); // 0-indexed
+      const dataPoints = monthly.map((v, i) => {
+        if (isCurrentYear && i > currentMonth) return null;
+        return v;
+      });
+
+      return { year: y, yearsBack, color, data: dataPoints, hasData, isCurrentYear };
+    });
+
+  // SVG 차트 빌드
+  const chartSvg = seriesList.length > 0
+    ? buildMultiYearLineSvg(seriesList)
+    : '<div class="myl-empty">연도를 선택해주세요</div>';
+
+  container.innerHTML = `
+    <div class="myl-card">
+      <div class="myl-header">
+        <div class="myl-title">연도별 월간 매출 추이</div>
+        <div class="myl-sub">1월 ~ 12월</div>
+      </div>
+      <div class="myl-chips">${chipsHtml}</div>
+      <div class="myl-chart-wrap">
+        ${chartSvg}
+        <div class="myl-tooltip" style="display:none;"></div>
+      </div>
+    </div>`;
+
+  // 칩 클릭 이벤트
+  container.querySelectorAll('.myl-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const year = parseInt(chip.dataset.year);
+      if (mylSelectedYears.has(year)) {
+        if (mylSelectedYears.size > 1) {
+          mylSelectedYears.delete(year);
+        }
+      } else {
+        mylSelectedYears.add(year);
+      }
+      renderMultiYearLineCard();
+    });
+  });
+
+  // 차트 호버/탭 인터랙션
+  attachMultiYearLineInteraction(seriesList);
+}
+
+// SVG 빌더 - 다중 연도 라인
+function buildMultiYearLineSvg(seriesList) {
+  const W = 720, H = 280;
+  const PL = 54, PR = 14, PT = 20, PB = 38;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+  const n = 12;
+  const stepX = cw / (n - 1);
+
+  // 최대값 (null 제외)
+  let maxVal = 1;
+  seriesList.forEach(s => {
+    s.data.forEach(v => {
+      if (v != null && v > maxVal) maxVal = v;
+    });
+  });
+
+  // y축 적절한 최대값
+  const niceMax = (v => {
+    if (v <= 100000) return Math.ceil(v / 20000) * 20000;
+    if (v <= 1000000) return Math.ceil(v / 200000) * 200000;
+    if (v <= 10000000) return Math.ceil(v / 2000000) * 2000000;
+    if (v <= 100000000) return Math.ceil(v / 20000000) * 20000000;
+    return Math.ceil(v / 100000000) * 100000000;
+  })(maxVal);
+
+  const xPos = i => PL + stepX * i;
+  const yPos = v => PT + ch - (v / niceMax) * ch;
+
+  let svg = `<svg class="myl-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+
+  // Y축 그리드
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = (niceMax / steps) * i;
+    const y = yPos(v);
+    svg += `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#e4e4e7" stroke-width="1" stroke-dasharray="${i === 0 ? '0' : '2,2'}"/>`;
+    let label;
+    if (v >= 100000000) label = (v / 100000000).toFixed(1) + '억';
+    else if (v >= 10000) label = Math.round(v / 10000) + '만';
+    else if (v >= 1000) label = (v / 1000) + 'K';
+    else label = v.toString();
+    svg += `<text x="${PL - 6}" y="${y + 3}" text-anchor="end" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${label}</text>`;
+  }
+  svg += `<text x="${PL - 46}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
+
+  // X축 호버 가이드라인 (숨김 상태)
+  svg += `<line class="myl-guideline" x1="0" y1="${PT}" x2="0" y2="${PT + ch}" stroke="#d4d4d8" stroke-width="1" stroke-dasharray="3,3" style="display:none;"/>`;
+
+  // 각 시리즈 라인 그리기
+  seriesList.forEach((s) => {
+    // 연속 구간 찾기 (null이면 끊김)
+    const segments = [];
+    let seg = [];
+    s.data.forEach((v, i) => {
+      if (v != null && v > 0) {
+        seg.push({ i, v });
+      } else {
+        if (seg.length >= 2) segments.push(seg);
+        seg = [];
+      }
+    });
+    if (seg.length >= 2) segments.push(seg);
+
+    // 단독 포인트도 렌더 (세그먼트 0 or 1)
+    const singlePoints = [];
+    s.data.forEach((v, i) => {
+      if (v != null && v > 0) singlePoints.push({ i, v });
+    });
+
+    // 선
+    segments.forEach(segPts => {
+      const path = segPts.map((p, j) => {
+        const x = xPos(p.i);
+        const y = yPos(p.v);
+        return `${j === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      svg += `<path d="${path}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>`;
+    });
+
+    // 포인트
+    singlePoints.forEach(p => {
+      const x = xPos(p.i);
+      const y = yPos(p.v);
+      svg += `<circle cx="${x}" cy="${y}" r="3.5" fill="#fff" stroke="${s.color}" stroke-width="2"/>`;
+    });
+  });
+
+  // X축 월 라벨
+  for (let i = 0; i < n; i++) {
+    const x = xPos(i);
+    svg += `<text x="${x}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="11" font-weight="600">${i + 1}월</text>`;
+  }
+
+  // 월별 히트 영역 (투명한 세로 라인) - 툴팁용
+  for (let i = 0; i < n; i++) {
+    const x = xPos(i);
+    const left = i === 0 ? PL : x - stepX / 2;
+    const width = (i === 0 || i === n - 1) ? stepX / 2 + (i === 0 ? 0 : 0) : stepX;
+    svg += `<rect class="myl-hit" x="${left}" y="${PT}" width="${stepX}" height="${ch}" fill="transparent" data-month="${i}" style="cursor:pointer;"/>`;
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+// 차트 호버/탭 인터랙션
+function attachMultiYearLineInteraction(seriesList) {
+  const wrap = document.querySelector('#multiYearLineCard .myl-chart-wrap');
+  if (!wrap) return;
+
+  const svg = wrap.querySelector('svg.myl-chart');
+  const tooltip = wrap.querySelector('.myl-tooltip');
+  const guideline = svg ? svg.querySelector('.myl-guideline') : null;
+  if (!svg || !tooltip) return;
+
+  const hits = svg.querySelectorAll('.myl-hit');
+
+  function showTooltip(monthIdx) {
+    const monthLabel = `${monthIdx + 1}월`;
+
+    const rows = seriesList.map(s => {
+      const v = s.data[monthIdx];
+      if (v == null || v === 0) {
+        return `
+          <div class="mylt-row">
+            <span class="mylt-row-left"><span class="mylt-dot" style="background:${s.color};"></span>${s.year}</span>
+            <span class="mylt-row-val empty">—</span>
+          </div>`;
+      }
+      return `
+        <div class="mylt-row">
+          <span class="mylt-row-left"><span class="mylt-dot" style="background:${s.color};"></span>${s.year}</span>
+          <span class="mylt-row-val">${v.toLocaleString()}원</span>
+        </div>`;
+    }).join('');
+
+    tooltip.innerHTML = `<div class="mylt-month">${monthLabel}</div>${rows}`;
+    tooltip.style.display = 'block';
+
+    // 위치 계산
+    const svgRect = svg.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    const scaleX = svgRect.width / vb.width;
+    const scaleY = svgRect.height / vb.height;
+
+    // 해당 월의 x 위치
+    const PL = 54, PR = 14;
+    const cw = vb.width - PL - PR;
+    const stepX = cw / (12 - 1);
+    const svgX = PL + stepX * monthIdx;
+    const pxX = (svgRect.left - wrapRect.left) + svgX * scaleX;
+    const pxY = (svgRect.top - wrapRect.top) + 20 * scaleY;
+
+    const tipW = tooltip.offsetWidth;
+    const wrapW = wrap.clientWidth;
+    let left = pxX - tipW / 2;
+    left = Math.max(4, Math.min(left, wrapW - tipW - 4));
+    tooltip.style.left = left + 'px';
+    tooltip.style.top = pxY + 'px';
+
+    // 가이드라인
+    if (guideline) {
+      guideline.setAttribute('x1', svgX);
+      guideline.setAttribute('x2', svgX);
+      guideline.style.display = '';
+    }
+  }
+
+  function hideTooltip() {
+    tooltip.style.display = 'none';
+    if (guideline) guideline.style.display = 'none';
+  }
+
+  hits.forEach(hit => {
+    const idx = parseInt(hit.getAttribute('data-month'));
+    hit.addEventListener('mouseenter', () => showTooltip(idx));
+    hit.addEventListener('mouseleave', () => hideTooltip());
+    hit.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showTooltip(idx);
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!wrap.contains(e.target)) hideTooltip();
+  }, { once: true });
 }
 
 // ─── 연간 누적 매출 카드 ───
