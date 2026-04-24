@@ -1682,6 +1682,197 @@
     font-size: 11px;
   }
 
+  /* 요약 - 월별 연도 비교 (mbd = monthly breakdown) */
+  .mbd-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .mbd-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+    gap: 10px;
+  }
+  .mbd-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .mbd-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+  .mbd-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .mbd-month-block {
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--card);
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .mbd-month-block:hover { border-color: var(--line-strong); }
+  .mbd-month-block.current {
+    border-color: rgba(0, 71, 171, 0.3);
+    box-shadow: 0 0 0 2px rgba(0, 71, 171, 0.05);
+  }
+  .mbd-month-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg-soft);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .mbd-month-head:hover { background: var(--bg-muted); }
+  .mbd-month-block.current .mbd-month-head {
+    background: var(--accent-tint);
+  }
+  .mbd-month-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mbd-month-block.current .mbd-month-label { color: var(--accent); }
+  .mbd-month-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .mbd-month-summary {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--ink-dim);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mbd-month-caret {
+    font-size: 14px;
+    color: var(--ink-faint);
+    transition: transform 0.2s;
+    line-height: 1;
+  }
+  .mbd-month-block.expanded .mbd-month-caret {
+    transform: rotate(180deg);
+  }
+  .mbd-month-body {
+    display: none;
+    padding: 8px 14px 12px;
+    border-top: 1px solid var(--line);
+  }
+  .mbd-month-block.expanded .mbd-month-body {
+    display: block;
+    animation: fadeIn 0.2s ease;
+  }
+  .mbd-year-row {
+    display: grid;
+    grid-template-columns: 50px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .mbd-year-row:last-child { border-bottom: none; }
+  .mbd-year-label {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .mbd-year-row.current .mbd-year-label { color: var(--accent); }
+  .mbd-year-bar-container {
+    height: 4px;
+    background: var(--bg-muted);
+    border-radius: 99px;
+    overflow: hidden;
+    margin: 0 4px;
+  }
+  .mbd-year-bar {
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.4;
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  .mbd-year-bar.current { opacity: 1; }
+  .mbd-year-val {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .mbd-year-revenue {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .mbd-year-row.current .mbd-year-revenue { color: var(--accent); font-weight: 800; }
+  .mbd-year-nodata {
+    font-size: 11px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .mbd-yoy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    min-width: 54px;
+    text-align: center;
+  }
+  .mbd-yoy.up { color: #047857; background: var(--success-soft); }
+  .mbd-yoy.down { color: #b91c1c; background: var(--danger-soft); }
+  .mbd-yoy.flat { color: var(--ink-faint); background: var(--bg-muted); }
+
+  .mbd-empty-month {
+    padding: 12px 14px;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  @media (max-width: 380px) {
+    .mbd-year-row { grid-template-columns: 44px 1fr auto; }
+    .mbd-year-revenue { font-size: 12px; }
+  }
+
   /* ---------- 오늘 페이지 (메인) ---------- */
   .today-page {}
 
@@ -3097,6 +3288,8 @@
         <div id="multiYearLineCard"></div>
         <!-- 인사이트 카드 -->
         <div id="insightsCard"></div>
+        <!-- 월별 연도 비교 (1~12월 세로 리스트) -->
+        <div id="monthlyBreakdownCard"></div>
       </div>
     </div>
 
@@ -6915,6 +7108,7 @@ function renderSummaryPage() {
   renderYtdRevenueCard();
   renderMultiYearLineCard();
   renderInsightsCard();
+  renderMonthlyBreakdownCard();
 }
 
 // 다중 연도 라인 차트 - 선택된 연도 상태 (Set)
@@ -7569,6 +7763,173 @@ function renderInsightsCard() {
       </div>
       <div class="ins-list">${rows.join('')}</div>
     </div>`;
+}
+
+// ─── 월별 연도 비교 카드 (1월~12월 세로 리스트, 각 월 접기/펼치기) ───
+// 어느 월이 펼쳐져 있는지 상태 유지 (초기: 현재 월 하나만 열림)
+let mbdExpandedMonths = null;
+
+function renderMonthlyBreakdownCard() {
+  const container = $('monthlyBreakdownCard');
+  if (!container) return;
+
+  if (allRecords.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // 1-indexed
+
+  // 초기 상태: 현재 월만 펼침
+  if (mbdExpandedMonths === null) {
+    mbdExpandedMonths = new Set([currentMonth]);
+  }
+
+  // 데이터 있는 연도 모두
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).sort((a, b) => b - a); // 최근이 위
+
+  // 연도 × 월 매출 맵 구성 (한 번만 순회)
+  const ymRev = {}; // ymRev[year][month] = amount
+  allRecords.forEach(r => {
+    const y = parseInt(r.date.slice(0, 4));
+    const m = parseInt(r.date.slice(5, 7));
+    if (!ymRev[y]) ymRev[y] = {};
+    ymRev[y][m] = (ymRev[y][m] || 0) + r.amount;
+  });
+
+  const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+
+  // 각 월 블록 렌더
+  const monthBlocks = monthNames.map((monthName, i) => {
+    const month = i + 1;
+    const isCurrentMonth = (month === currentMonth);
+    const isFuture = (month > currentMonth);
+    const isExpanded = mbdExpandedMonths.has(month);
+
+    // 이 월의 연도별 매출 수집
+    const yearRows = dataYears
+      .map(y => {
+        const rev = ymRev[y]?.[month] || 0;
+        return { year: y, revenue: rev };
+      })
+      .filter(r => {
+        // 미래 달: 올해 행은 제거 (아직 없음)
+        if (isFuture && r.year === currentYear) return false;
+        return true;
+      });
+
+    // 현재 연도 매출 (요약 표시용)
+    const currentYearRev = ymRev[currentYear]?.[month] || 0;
+
+    // 직전년도와 비교 (요약에 쓰일 YoY)
+    const prevYearRev = ymRev[currentYear - 1]?.[month] || 0;
+    let summaryYoy = '';
+    if (!isFuture && currentYearRev > 0 && prevYearRev > 0) {
+      const pct = ((currentYearRev - prevYearRev) / prevYearRev * 100);
+      const cls = pct > 0 ? 'up' : (pct < 0 ? 'down' : 'flat');
+      const arrow = pct > 0 ? '▲' : (pct < 0 ? '▼' : '―');
+      const sign = pct > 0 ? '+' : '';
+      summaryYoy = `<span class="mbd-yoy ${cls}">${arrow} ${sign}${pct.toFixed(1)}%</span>`;
+    }
+
+    // 요약 라벨
+    let headRight;
+    if (isFuture) {
+      headRight = `<span style="color:var(--ink-faint); font-weight:500;">—</span>`;
+    } else if (currentYearRev > 0) {
+      headRight = `
+        <span>${currentYearRev.toLocaleString()}원</span>
+        ${summaryYoy}
+      `;
+    } else {
+      headRight = `<span style="color:var(--ink-faint);">데이터 없음</span>`;
+    }
+
+    // 각 연도 행 (YoY: 해당 행 vs 1년 전 매출)
+    const maxRev = Math.max(...yearRows.map(r => r.revenue), 1);
+    const yearRowsHtml = yearRows.map((r) => {
+      const prev = yearRows.find(p => p.year === r.year - 1);
+      const prevRev = prev?.revenue || 0;
+      let yoyHtml;
+      if (r.revenue === 0) {
+        yoyHtml = `<span class="mbd-yoy flat">—</span>`;
+      } else if (prevRev === 0) {
+        yoyHtml = `<span class="mbd-yoy flat">–</span>`;
+      } else {
+        const diff = r.revenue - prevRev;
+        const pct = (diff / prevRev * 100);
+        const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+        const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '―');
+        const sign = diff > 0 ? '+' : '';
+        yoyHtml = `<span class="mbd-yoy ${cls}">${arrow} ${sign}${pct.toFixed(1)}%</span>`;
+      }
+
+      const isYearCurrent = r.year === currentYear;
+      const pct = r.revenue > 0 ? (r.revenue / maxRev * 100).toFixed(1) : 0;
+      const revText = r.revenue > 0
+        ? `<span class="mbd-year-revenue">${r.revenue.toLocaleString()}원</span>`
+        : `<span class="mbd-year-nodata">데이터 없음</span>`;
+
+      return `
+        <div class="mbd-year-row ${isYearCurrent ? 'current' : ''}">
+          <div class="mbd-year-label">${r.year}</div>
+          <div class="mbd-year-bar-container">
+            <div class="mbd-year-bar ${isYearCurrent ? 'current' : ''}" style="width:${pct}%"></div>
+          </div>
+          <div class="mbd-year-val">
+            ${revText}
+            ${yoyHtml}
+          </div>
+        </div>`;
+    }).join('');
+
+    const bodyHtml = yearRows.length > 0
+      ? yearRowsHtml
+      : `<div class="mbd-empty-month">해당 월 데이터 없음</div>`;
+
+    return `
+      <div class="mbd-month-block ${isCurrentMonth ? 'current' : ''} ${isExpanded ? 'expanded' : ''}" data-month="${month}">
+        <div class="mbd-month-head">
+          <div class="mbd-month-label">
+            ${monthName}
+            ${isCurrentMonth ? '<span class="mbd-month-badge">이번달</span>' : ''}
+          </div>
+          <div class="mbd-month-summary">
+            ${headRight}
+            <span class="mbd-month-caret">▾</span>
+          </div>
+        </div>
+        <div class="mbd-month-body">
+          ${bodyHtml}
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="mbd-card">
+      <div class="mbd-header">
+        <div class="mbd-title">월별 연도 비교</div>
+        <div class="mbd-subtitle">1월 ~ 12월</div>
+      </div>
+      <div class="mbd-list">${monthBlocks}</div>
+    </div>`;
+
+  // 클릭 이벤트: 월 헤드 클릭 시 접기/펼치기 토글
+  container.querySelectorAll('.mbd-month-head').forEach(head => {
+    head.addEventListener('click', () => {
+      const block = head.closest('.mbd-month-block');
+      const month = parseInt(block.dataset.month);
+      if (mbdExpandedMonths.has(month)) {
+        mbdExpandedMonths.delete(month);
+      } else {
+        mbdExpandedMonths.add(month);
+      }
+      block.classList.toggle('expanded');
+    });
+  });
 }
 
 async function openTodayModal() {
