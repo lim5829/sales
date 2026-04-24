@@ -1540,6 +1540,148 @@
     flex-shrink: 0;
   }
 
+  /* 요약 - 인사이트 카드 */
+  .ins-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .ins-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ins-header-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+  .ins-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .ins-subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 500;
+    margin-left: auto;
+  }
+  .ins-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .ins-row {
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .ins-row:last-child { border-bottom: none; }
+
+  .ins-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--r-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .ins-icon.peak {
+    background: var(--success-soft);
+    color: #047857;
+  }
+  .ins-icon.low {
+    background: var(--warn-soft);
+    color: #b45309;
+  }
+  .ins-icon.drop {
+    background: var(--danger-soft);
+    color: #b91c1c;
+  }
+  .ins-icon.trend-down {
+    background: var(--danger-soft);
+    color: #b91c1c;
+  }
+  .ins-icon.trend-up {
+    background: var(--success-soft);
+    color: #047857;
+  }
+  .ins-icon.trend-flat {
+    background: var(--bg-muted);
+    color: var(--ink-dim);
+  }
+
+  .ins-content {
+    min-width: 0;
+  }
+  .ins-label {
+    font-size: 11px;
+    color: var(--ink-dim);
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    margin-bottom: 1px;
+  }
+  .ins-main {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  .ins-main .ins-accent {
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .ins-main .ins-good { color: #047857; }
+  .ins-main .ins-bad { color: #b91c1c; }
+  .ins-main .ins-warn { color: #b45309; }
+
+  .ins-value {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink-dim);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .ins-value-sub {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+    text-align: right;
+  }
+  .ins-value.up { color: #047857; }
+  .ins-value.down { color: #b91c1c; }
+
+  .ins-empty {
+    padding: 24px 12px;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
   /* ---------- 오늘 페이지 (메인) ---------- */
   .today-page {}
 
@@ -1632,6 +1774,134 @@
     width: 100%;
     overflow-x: auto;
     position: relative;
+  }
+
+  /* 연도별 비교 - 컴팩트 카드 리스트 (yyc = year year compare) */
+  .yyc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .yyc-row {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    align-items: center;
+    transition: border-color 0.15s;
+  }
+  .yyc-row:hover { border-color: var(--line-strong); }
+  .yyc-row.current {
+    background: var(--accent-tint);
+    border-color: rgba(0, 71, 171, 0.25);
+  }
+  .yyc-row.empty {
+    opacity: 0.55;
+  }
+  .yyc-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .yyc-year {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .yyc-row.current .yyc-year { color: var(--accent); }
+  .yyc-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #fff;
+    background: var(--accent);
+    padding: 2px 6px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .yyc-period {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .yyc-right {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+  .yyc-bar-container {
+    height: 5px;
+    background: var(--bg-muted);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .yyc-bar {
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.4;
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.22,1,0.36,1);
+  }
+  .yyc-bar.current { opacity: 1; }
+  .yyc-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .yyc-revenue {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .yyc-row.current .yyc-revenue { color: var(--accent); font-weight: 800; }
+  .yyc-u {
+    font-size: 10px;
+    color: var(--ink-faint);
+    font-weight: 500;
+    margin-left: 1px;
+  }
+  .yyc-nodata {
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .yyc-yoy {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--r-sm);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .yyc-yoy.up { color: #047857; background: var(--success-soft); }
+  .yyc-yoy.down { color: #b91c1c; background: var(--danger-soft); }
+  .yyc-yoy.flat { color: var(--ink-faint); background: var(--bg-muted); }
+
+  @media (max-width: 380px) {
+    .yyc-row { grid-template-columns: 80px 1fr; padding: 10px 12px; }
+    .yyc-year { font-size: 14px; }
+    .yyc-revenue { font-size: 14px; }
   }
   .yl-chart {
     width: 100%;
@@ -2825,6 +3095,8 @@
         <div id="ytdRevenueCard"></div>
         <!-- 다중 연도 월별 라인 비교 -->
         <div id="multiYearLineCard"></div>
+        <!-- 인사이트 카드 -->
+        <div id="insightsCard"></div>
       </div>
     </div>
 
@@ -5957,13 +6229,16 @@ function buildDowCompareSvg(aData, bData) {
 
 // 연도별 같은 주 꺾은선 차트
 function renderWeekYearChart(mondayStr) {
+  const container = $('weekYearRows');
+  if (!container) return;
+
   if (allRecords.length === 0) {
-    $('weekYearRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
+    container.innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
     return;
   }
 
   const baseYear = new Date(mondayStr + 'T12:00:00').getFullYear();
-  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort();
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort((a, b) => b - a); // 최근이 위
 
   const pastData = dataYears.map(y => {
     const yearsBack = baseYear - y;
@@ -5973,9 +6248,53 @@ function renderWeekYearChart(mondayStr) {
     return { year: y, yearsBack, targetDate: targetMondayStr, targetEnd: targetSundayStr, analysis };
   });
 
-  $('weekYearRows').innerHTML = buildYearLineSvg(pastData, 'week')
-    || '<div style="color:var(--ink-faint);font-size:11px;">비교할 과거 데이터 없음</div>';
-  attachYearLineTooltip('#weekYearRows');
+  // 각 연도의 바로 다음 연도(더 오래된)와 YoY 비교
+  const maxRev = Math.max(...pastData.map(d => d.analysis?.revenue || 0), 1);
+
+  const rows = pastData.map((d, idx) => {
+    const rev = d.analysis?.revenue || 0;
+    const isCurrent = d.yearsBack === 0;
+    // YoY: 바로 이전 연도(1년 전)와 비교
+    const prevYear = pastData.find(p => p.year === d.year - 1);
+    const prevRev = prevYear?.analysis?.revenue || 0;
+
+    let yoyHtml;
+    if (rev === 0) {
+      yoyHtml = `<span class="yyc-yoy flat">—</span>`;
+    } else if (prevRev === 0) {
+      yoyHtml = `<span class="yyc-yoy flat">–</span>`;
+    } else {
+      const diff = rev - prevRev;
+      const pct = (diff / prevRev * 100);
+      const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '―');
+      const sign = diff > 0 ? '+' : '';
+      yoyHtml = `<span class="yyc-yoy ${cls}">${arrow} ${sign}${pct.toFixed(1)}%</span>`;
+    }
+
+    const pct = rev > 0 ? (rev / maxRev * 100).toFixed(1) : 0;
+    const periodLabel = `${d.targetDate.slice(5).replace('-', '.')} ~ ${d.targetEnd.slice(5).replace('-', '.')}`;
+    const revText = rev > 0 ? `${rev.toLocaleString()}<span class="yyc-u">원</span>` : `<span class="yyc-nodata">데이터 없음</span>`;
+
+    return `
+      <div class="yyc-row ${isCurrent ? 'current' : ''} ${rev === 0 ? 'empty' : ''}">
+        <div class="yyc-left">
+          <div class="yyc-year">${d.year}${isCurrent ? '<span class="yyc-badge">현재</span>' : ''}</div>
+          <div class="yyc-period">${periodLabel}</div>
+        </div>
+        <div class="yyc-right">
+          <div class="yyc-bar-container">
+            <div class="yyc-bar ${isCurrent ? 'current' : ''}" style="width:${pct}%"></div>
+          </div>
+          <div class="yyc-meta">
+            <div class="yyc-revenue">${revText}</div>
+            ${yoyHtml}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `<div class="yyc-list">${rows}</div>`;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6531,6 +6850,7 @@ function renderYearYearChart(year) {
 function renderSummaryPage() {
   renderYtdRevenueCard();
   renderMultiYearLineCard();
+  renderInsightsCard();
 }
 
 // 다중 연도 라인 차트 - 선택된 연도 상태 (Set)
@@ -6990,6 +7310,201 @@ function renderYtdRevenueCard() {
       </div>
     </div>
   `;
+}
+
+// ─── 인사이트 카드 ───
+// 올해(진행 중 포함) 월별 데이터를 분석해서 최고/최저/YoY 급감/최근 3개월 트렌드 표시
+function renderInsightsCard() {
+  const container = $('insightsCard');
+  if (!container) return;
+
+  if (allRecords.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+
+  // 올해 월별 매출 (1~12월)
+  const thisMonthly = new Array(12).fill(0);
+  // 전년도 월별 매출
+  const lastMonthly = new Array(12).fill(0);
+  // 월별 영업 여부 (매출 > 0인 달만 유효)
+  const thisHasData = new Array(12).fill(false);
+  const lastHasData = new Array(12).fill(false);
+
+  allRecords.forEach(r => {
+    const y = parseInt(r.date.slice(0, 4));
+    const m = parseInt(r.date.slice(5, 7)) - 1;
+    if (y === year) {
+      thisMonthly[m] += r.amount;
+      if (r.amount > 0) thisHasData[m] = true;
+    } else if (y === year - 1) {
+      lastMonthly[m] += r.amount;
+      if (r.amount > 0) lastHasData[m] = true;
+    }
+  });
+
+  // 올해 완료된 "유효 월"만 분석 대상
+  // 현재 달(진행 중)은 제외: 월말이 지나야 최고/최저 비교가 공정
+  // 단 분석 대상이 0개면 현재 달도 포함 (초기 사용자 위해)
+  let validMonthIndices = [];
+  for (let i = 0; i < currentMonth; i++) {
+    if (thisHasData[i]) validMonthIndices.push(i);
+  }
+  // 현재 달도 포함할지: 완료된 달이 3개 미만이면 현재 달 포함
+  if (validMonthIndices.length < 3 && thisHasData[currentMonth]) {
+    validMonthIndices.push(currentMonth);
+  }
+
+  // 인사이트가 하나도 만들어지지 않으면 빈 상태
+  if (validMonthIndices.length === 0) {
+    container.innerHTML = `
+      <div class="ins-card">
+        <div class="ins-header">
+          <div class="ins-header-icon">📊</div>
+          <div class="ins-title">인사이트</div>
+          <div class="ins-subtitle">${year}년</div>
+        </div>
+        <div class="ins-empty">분석할 올해 데이터가 아직 부족해요</div>
+      </div>`;
+    return;
+  }
+
+  const monthNames = ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월'];
+
+  // ① 최고 매출 월
+  let peakIdx = validMonthIndices[0];
+  validMonthIndices.forEach(i => {
+    if (thisMonthly[i] > thisMonthly[peakIdx]) peakIdx = i;
+  });
+  const peakVal = thisMonthly[peakIdx];
+
+  // ② 최저 매출 월
+  let lowIdx = validMonthIndices[0];
+  validMonthIndices.forEach(i => {
+    if (thisMonthly[i] < thisMonthly[lowIdx]) lowIdx = i;
+  });
+  const lowVal = thisMonthly[lowIdx];
+
+  // ③ 전년 대비 가장 크게 감소한 월 (둘 다 데이터 있는 달 중)
+  let worstYoyIdx = -1;
+  let worstYoyPct = 0;
+  validMonthIndices.forEach(i => {
+    if (thisHasData[i] && lastHasData[i] && lastMonthly[i] > 0) {
+      const pct = ((thisMonthly[i] - lastMonthly[i]) / lastMonthly[i]) * 100;
+      if (pct < worstYoyPct) {
+        worstYoyPct = pct;
+        worstYoyIdx = i;
+      }
+    }
+  });
+
+  // ④ 최근 3개월 평균 추세 (완료된 최근 3개월: currentMonth-3, -2, -1)
+  // 현재 달 제외하고 완료된 최근 3개월
+  const recent3 = [];
+  for (let i = currentMonth - 3; i < currentMonth; i++) {
+    if (i >= 0 && thisHasData[i]) {
+      recent3.push({ idx: i, val: thisMonthly[i] });
+    }
+  }
+
+  let trendLabel, trendClass, trendDesc;
+  if (recent3.length >= 3) {
+    const [a, b, c] = recent3;
+    if (a.val > b.val && b.val > c.val) {
+      trendLabel = '지속 하락';
+      trendClass = 'trend-down';
+      trendDesc = `${monthNames[a.idx]} → ${monthNames[c.idx]}`;
+    } else if (a.val < b.val && b.val < c.val) {
+      trendLabel = '지속 상승';
+      trendClass = 'trend-up';
+      trendDesc = `${monthNames[a.idx]} → ${monthNames[c.idx]}`;
+    } else {
+      // 부분 추세: 방향 판단
+      const avg = (a.val + b.val + c.val) / 3;
+      const recentAvg = c.val;
+      const pct = avg > 0 ? ((recentAvg - avg) / avg) * 100 : 0;
+      if (pct > 5) { trendLabel = '상승세'; trendClass = 'trend-up'; }
+      else if (pct < -5) { trendLabel = '하락세'; trendClass = 'trend-down'; }
+      else { trendLabel = '변동 없음'; trendClass = 'trend-flat'; }
+      trendDesc = `${monthNames[a.idx]} · ${monthNames[b.idx]} · ${monthNames[c.idx]}`;
+    }
+  } else if (recent3.length > 0) {
+    trendLabel = '분석 데이터 부족';
+    trendClass = 'trend-flat';
+    trendDesc = `완료된 달: ${recent3.length}개월`;
+  } else {
+    trendLabel = null;
+  }
+
+  // HTML 구성
+  const rows = [];
+
+  rows.push(`
+    <div class="ins-row">
+      <div class="ins-icon peak">▲</div>
+      <div class="ins-content">
+        <div class="ins-label">최고 매출</div>
+        <div class="ins-main"><span class="ins-accent">${monthNames[peakIdx]}</span></div>
+      </div>
+      <div class="ins-value up">${peakVal.toLocaleString()}원</div>
+    </div>`);
+
+  rows.push(`
+    <div class="ins-row">
+      <div class="ins-icon low">▼</div>
+      <div class="ins-content">
+        <div class="ins-label">최저 매출</div>
+        <div class="ins-main"><span class="ins-warn">${monthNames[lowIdx]}</span></div>
+      </div>
+      <div class="ins-value">${lowVal.toLocaleString()}원</div>
+    </div>`);
+
+  if (worstYoyIdx >= 0) {
+    rows.push(`
+      <div class="ins-row">
+        <div class="ins-icon drop">↓</div>
+        <div class="ins-content">
+          <div class="ins-label">전년 대비 가장 감소</div>
+          <div class="ins-main"><span class="ins-bad">${monthNames[worstYoyIdx]}</span> <span style="color:var(--ink-dim); font-weight:600; font-size:12px;">${worstYoyPct.toFixed(0)}%</span></div>
+        </div>
+        <div class="ins-value down">
+          ${thisMonthly[worstYoyIdx].toLocaleString()}원
+          <span class="ins-value-sub">전년 ${lastMonthly[worstYoyIdx].toLocaleString()}원</span>
+        </div>
+      </div>`);
+  }
+
+  if (trendLabel) {
+    const recentText = recent3.length >= 3
+      ? `${recent3.map(r => Math.round(r.val / 10000) + '만').join(' → ')}`
+      : '';
+    rows.push(`
+      <div class="ins-row">
+        <div class="ins-icon ${trendClass}">${trendClass === 'trend-up' ? '↗' : (trendClass === 'trend-down' ? '↘' : '→')}</div>
+        <div class="ins-content">
+          <div class="ins-label">최근 3개월 평균</div>
+          <div class="ins-main"><span class="${trendClass === 'trend-up' ? 'ins-good' : (trendClass === 'trend-down' ? 'ins-bad' : '')}">${trendLabel}</span></div>
+        </div>
+        <div class="ins-value">
+          <span style="color: var(--ink-dim); font-weight: 600;">${trendDesc}</span>
+          ${recentText ? `<span class="ins-value-sub">${recentText}</span>` : ''}
+        </div>
+      </div>`);
+  }
+
+  container.innerHTML = `
+    <div class="ins-card">
+      <div class="ins-header">
+        <div class="ins-header-icon">📊</div>
+        <div class="ins-title">인사이트</div>
+        <div class="ins-subtitle">${year}년</div>
+      </div>
+      <div class="ins-list">${rows.join('')}</div>
+    </div>`;
 }
 
 async function openTodayModal() {
