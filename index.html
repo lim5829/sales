@@ -100,40 +100,51 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
-    padding-bottom: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
     border-bottom: 1px solid var(--line);
+    gap: 12px;
   }
 
-  .brand-wrap { display: flex; align-items: baseline; gap: 10px; }
-
-  .brand {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--ink);
-    letter-spacing: -0.02em;
+  /* 상단 탑 레벨 탭 (비교 / 분석) */
+  .top-nav {
     display: flex;
-    align-items: center;
-    gap: 8px;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
   }
 
-  .brand::before {
-    content: '';
-    width: 8px;
-    height: 8px;
-    background: var(--accent);
-    border-radius: 2px;
-    display: inline-block;
-  }
-
-  .brand-sub {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.15em;
+  .top-nav-tab {
+    padding: 8px 18px;
+    background: transparent;
+    border: none;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
     color: var(--ink-faint);
-    text-transform: uppercase;
-    font-weight: 500;
+    cursor: pointer;
+    border-radius: var(--r-md);
+    letter-spacing: -0.02em;
+    transition: all 0.15s;
+    position: relative;
   }
+  .top-nav-tab:hover:not(.active) { color: var(--ink-dim); }
+  .top-nav-tab.active {
+    color: var(--ink);
+  }
+  .top-nav-tab.active::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: -11px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+
+  /* 빈 상태에서는 상단 탭 숨김 */
+  body.no-data .top-nav { visibility: hidden; }
 
   .topbar-actions { display: flex; gap: 6px; align-items: center; }
 
@@ -1201,6 +1212,10 @@
 
   .main-panel { display: none; }
   .main-panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+  /* 상단 탑 레벨 패널 (비교 / 분석) */
+  .top-panel { display: none; }
+  .top-panel.active { display: block; animation: fadeIn 0.25s ease; }
 
   /* ---------- 오늘 페이지 (메인) ---------- */
   .today-page {}
@@ -2338,9 +2353,9 @@
 <div class="container">
   <!-- 상단 바 -->
   <nav class="topbar">
-    <div class="brand-wrap">
-      <div class="brand">매출 저널</div>
-      <div class="brand-sub">Sales Journal</div>
+    <div class="top-nav">
+      <button class="top-nav-tab active" data-top="compare">비교</button>
+      <button class="top-nav-tab" data-top="analytics">분석</button>
     </div>
     <div class="topbar-actions">
       <button class="icon-btn" id="btnToday" title="오늘 리포트">
@@ -2367,14 +2382,15 @@
     </button>
   </div>
 
-  <!-- 메인 콘텐츠 (탭) -->
+  <!-- 메인 콘텐츠 -->
   <div class="dashboard" id="dashboard">
-    <div class="main-tabs">
-      <button class="main-tab active" data-main="today">오늘</button>
-      <button class="main-tab" data-main="week">주간</button>
-      <button class="main-tab" data-main="month">월간</button>
-      <button class="main-tab" data-main="analytics">분석</button>
-    </div>
+    <!-- ═══ 비교 그룹 (오늘/주간/월간) ═══ -->
+    <div class="top-panel active" id="top-compare">
+      <div class="main-tabs">
+        <button class="main-tab active" data-main="today">오늘</button>
+        <button class="main-tab" data-main="week">주간</button>
+        <button class="main-tab" data-main="month">월간</button>
+      </div>
 
     <!-- ===== 오늘 탭 ===== -->
     <div class="main-panel active" id="main-today">
@@ -2450,9 +2466,10 @@
         </div>
       </div>
     </div>
+    </div> <!-- /top-compare -->
 
-    <!-- ===== 분석 탭 ===== -->
-    <div class="main-panel" id="main-analytics">
+    <!-- ═══ 분석 패널 ═══ -->
+    <div class="top-panel" id="top-analytics">
     <!-- 기간 선택 -->
     <div class="period-bar">
       <div>
@@ -2594,7 +2611,7 @@
         </div>
       </div>
     </div>
-    </div> <!-- /main-analytics -->
+    </div> <!-- /top-analytics -->
   </div> <!-- /dashboard -->
 
   <footer>Offline First &middot; Data stays on your device</footer>
@@ -3411,13 +3428,20 @@ async function refreshAll() {
 
 // 현재 활성화된 메인 탭을 다시 렌더
 function renderActiveMainTab() {
-  const active = document.querySelector('.main-tab.active');
-  if (!active) return;
-  const m = active.dataset.main;
+  const topActive = document.querySelector('.top-nav-tab.active');
+  if (!topActive) return;
+  const top = topActive.dataset.top;
+  if (top === 'analytics') {
+    renderDashboard();
+    return;
+  }
+  // 비교 그룹 안의 현재 서브탭 렌더
+  const subActive = document.querySelector('.main-tab.active');
+  if (!subActive) return;
+  const m = subActive.dataset.main;
   if (m === 'today') renderTodayMainPage().catch(e => console.warn(e));
   else if (m === 'week') renderWeekMainPage().catch(e => console.warn(e));
   else if (m === 'month') renderMonthMainPage().catch(e => console.warn(e));
-  else if (m === 'analytics') renderDashboard();
 }
 
 function filterByPeriod(records, period) {
@@ -5987,7 +6011,31 @@ function setupEvents() {
     openTodayModal();
   });
 
-  // 메인 탭 전환
+  // 상단 탑 레벨 탭 전환 (비교 / 분석)
+  document.querySelectorAll('.top-nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.top-nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.top-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      $('top-' + tab.dataset.top).classList.add('active');
+
+      const m = tab.dataset.top;
+      if (m === 'analytics') {
+        renderDashboard();
+      } else if (m === 'compare') {
+        // 현재 활성화된 비교 서브탭 렌더
+        const active = document.querySelector('.main-tab.active');
+        if (active) {
+          const sub = active.dataset.main;
+          if (sub === 'today') renderTodayMainPage().catch(e => console.warn(e));
+          else if (sub === 'week') renderWeekMainPage().catch(e => console.warn(e));
+          else if (sub === 'month') renderMonthMainPage().catch(e => console.warn(e));
+        }
+      }
+    });
+  });
+
+  // 비교 그룹 내 서브탭 (오늘/주간/월간)
   document.querySelectorAll('.main-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
@@ -5996,8 +6044,7 @@ function setupEvents() {
       $('main-' + tab.dataset.main).classList.add('active');
 
       const m = tab.dataset.main;
-      if (m === 'analytics') renderDashboard();
-      else if (m === 'week') renderWeekMainPage().catch(e => console.warn('week render:', e));
+      if (m === 'week') renderWeekMainPage().catch(e => console.warn('week render:', e));
       else if (m === 'month') renderMonthMainPage().catch(e => console.warn('month render:', e));
       else if (m === 'today') renderTodayMainPage().catch(e => console.warn('today render:', e));
     });
