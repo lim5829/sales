@@ -8158,51 +8158,6 @@ function renderHeatmapInsights(analysis, dataset) {
     return { group: g, desc, overCount: s.over.length, underCount: s.under.length, total: s.total };
   }).filter(x => x);
 
-  // 4) 실행 액션 3개 생성 (인력 / 운영시간 / 매출 전략)
-  const actions = [];
-
-  // 인력: 과부하 + 헛바쁨 많은 시간대 조합 → 인력 배치 조정
-  const overload = flat.filter(x => x.status === 'overload').sort((a, b) => b.ordersZ - a.ordersZ).slice(0, 3);
-  const fakeBusy = flat.filter(x => x.efficiency === 'fake_busy').slice(0, 3);
-  if (overload.length > 0 || fakeBusy.length > 0) {
-    const slots = [...overload.slice(0, 2), ...fakeBusy.slice(0, 1)];
-    const slotTxt = slots.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
-    actions.push({
-      category: '인력',
-      title: '피크 시간 인력 보강',
-      detail: `${slotTxt}${fakeBusy.length > 0 ? ' — 특히 헛바쁨 시간대는 계산/응대 분리 필요' : ''}`,
-    });
-  }
-
-  // 운영시간: 구조적 저활성 시간대 → 단축 검토
-  if (structural.length > 0) {
-    const slotTxt = structural.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
-    actions.push({
-      category: '운영시간',
-      title: '저활성 시간대 단축 검토',
-      detail: `${slotTxt} — ${structural.length}개 시간대가 40% 이상 0원. 운영비 대비 비효율`,
-    });
-  }
-
-  // 매출 전략: 고효율 시간대 확대 또는 수요 붕괴 시간대 프로모션
-  const highEff = flat.filter(x => x.efficiency === 'high_efficiency').sort((a, b) => b.avgTxScore - a.avgTxScore).slice(0, 2);
-  const collapse = flat.filter(x => x.efficiency === 'demand_collapse').slice(0, 2);
-  if (highEff.length > 0) {
-    const slotTxt = highEff.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
-    actions.push({
-      category: '매출 전략',
-      title: '고효율 시간대 공략 확대',
-      detail: `${slotTxt} — 주문 적지만 객단가 높음. 프리미엄 메뉴/세트 푸시 기회`,
-    });
-  } else if (collapse.length > 0) {
-    const slotTxt = collapse.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
-    actions.push({
-      category: '매출 전략',
-      title: '수요 붕괴 구간 회복 프로모션',
-      detail: `${slotTxt} — 주문수·매출 동반 하락. 원인 파악 후 할인/이벤트 검토`,
-    });
-  }
-
   box.innerHTML = `
     <div class="hm-insights-title">💡 인사이트</div>
 
@@ -8231,20 +8186,6 @@ function renderHeatmapInsights(analysis, dataset) {
       <div class="hm-insights-tags">
         ${temporary.map(x => `<span class="hm-insights-tag temporary">${DOW_SHORT[x.dow]} ${x.hour}시 · z=${x.salesZ.toFixed(1)}</span>`).join('')}
       </div>
-    </div>` : ''}
-
-    ${actions.length > 0 ? `
-    <div class="hm-insights-section">
-      <div class="hm-insights-section-label">🎯 실행 액션</div>
-      ${actions.map(a => `
-        <div class="hm-action-row">
-          <span class="hm-action-cat">${a.category}</span>
-          <div class="hm-action-body">
-            <div class="hm-action-title">${a.title}</div>
-            <div class="hm-action-detail">${a.detail}</div>
-          </div>
-        </div>
-      `).join('')}
     </div>` : ''}
   `;
   box.style.display = '';
