@@ -2947,8 +2947,8 @@
   <!-- 상단 바 -->
   <nav class="topbar">
     <div class="top-nav">
-      <button class="top-nav-tab active" data-top="compare">비교</button>
-      <button class="top-nav-tab" data-top="summary">요약</button>
+      <button class="top-nav-tab active" data-top="summary">요약</button>
+      <button class="top-nav-tab" data-top="compare">비교</button>
       <button class="top-nav-tab" data-top="analytics">분석</button>
     </div>
     <div class="topbar-actions">
@@ -2979,7 +2979,7 @@
   <!-- 메인 콘텐츠 -->
   <div class="dashboard" id="dashboard">
     <!-- ═══ 비교 그룹 (오늘/주간/월간) ═══ -->
-    <div class="top-panel active" id="top-compare">
+    <div class="top-panel" id="top-compare">
       <div class="main-tabs">
         <button class="main-tab active" data-main="today">오늘</button>
         <button class="main-tab" data-main="week">주간</button>
@@ -3089,7 +3089,7 @@
     </div> <!-- /top-compare -->
 
     <!-- ═══ 요약 패널 ═══ -->
-    <div class="top-panel" id="top-summary">
+    <div class="top-panel active" id="top-summary">
       <div id="summaryContent">
         <!-- 연간 누적 매출 카드 -->
         <div id="ytdRevenueCard"></div>
@@ -5670,7 +5670,7 @@ async function renderTodayMainPage() {
 
   const currentYear = baseDate.getFullYear();
   const dataYears = [...new Set(allRecords.map(r => r.date.slice(0,4)))]
-    .map(Number).sort().reverse();
+    .map(Number).sort((a, b) => b - a); // 최근이 위
 
   const pastData = dataYears.map(y => {
     const yearsBack = currentYear - y;
@@ -5680,12 +5680,8 @@ async function renderTodayMainPage() {
     return { year: y, yearsBack, targetDate, analysis };
   });
 
-  // ─── 연도별 꺾은선 차트 (매출 기준) ───
-  // 시간 순서대로 오래된 연도 → 최근 연도
-  const chartData = [...pastData].sort((a, b) => a.year - b.year);
-  $('yearBarRows').innerHTML = buildYearLineSvg(chartData)
-    || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
-  attachYearLineTooltip();
+  // ─── 연도별 카드 리스트 ───
+  $('yearBarRows').innerHTML = buildYearCompareList(pastData, 'day');
 }
 
 function buildYearLineSvg(chartData, mode) {
@@ -6297,6 +6293,78 @@ function renderWeekYearChart(mondayStr) {
   container.innerHTML = `<div class="yyc-list">${rows}</div>`;
 }
 
+// 공통 카드 리스트 빌더 (오늘/주간/월간/연간 공용)
+// pastData: [{ year, yearsBack, targetDate, targetEnd, analysis }]
+// mode: 'day' | 'week' | 'month' | 'year'
+function buildYearCompareList(pastData, mode) {
+  if (pastData.length === 0) {
+    return '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 데이터 없음</div>';
+  }
+
+  const maxRev = Math.max(...pastData.map(d => d.analysis?.revenue || 0), 1);
+
+  const rows = pastData.map(d => {
+    const rev = d.analysis?.revenue || 0;
+    const isCurrent = d.yearsBack === 0;
+    // YoY: 같은 배열 내 1년 전 데이터와 비교
+    const prevYear = pastData.find(p => p.year === d.year - 1);
+    const prevRev = prevYear?.analysis?.revenue || 0;
+
+    let yoyHtml;
+    if (rev === 0) {
+      yoyHtml = `<span class="yyc-yoy flat">—</span>`;
+    } else if (prevRev === 0) {
+      yoyHtml = `<span class="yyc-yoy flat">–</span>`;
+    } else {
+      const diff = rev - prevRev;
+      const pct = (diff / prevRev * 100);
+      const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '―');
+      const sign = diff > 0 ? '+' : '';
+      yoyHtml = `<span class="yyc-yoy ${cls}">${arrow} ${sign}${pct.toFixed(1)}%</span>`;
+    }
+
+    const pct = rev > 0 ? (rev / maxRev * 100).toFixed(1) : 0;
+
+    // mode별 기간 라벨
+    let periodLabel;
+    if (mode === 'day') {
+      const tdow = new Date(d.targetDate + 'T12:00:00').getDay();
+      periodLabel = `${d.targetDate.slice(5).replace('-', '.')} (${DOW_KO[tdow]})`;
+    } else if (mode === 'week') {
+      periodLabel = `${d.targetDate.slice(5).replace('-', '.')} ~ ${d.targetEnd.slice(5).replace('-', '.')}`;
+    } else if (mode === 'month') {
+      const mm = d.targetDate.slice(5, 7);
+      periodLabel = `${mm}월 전체`;
+    } else if (mode === 'year') {
+      periodLabel = `1.1 ~ 12.31`;
+    } else {
+      periodLabel = d.targetDate;
+    }
+
+    const revText = rev > 0 ? `${rev.toLocaleString()}<span class="yyc-u">원</span>` : `<span class="yyc-nodata">데이터 없음</span>`;
+
+    return `
+      <div class="yyc-row ${isCurrent ? 'current' : ''} ${rev === 0 ? 'empty' : ''}">
+        <div class="yyc-left">
+          <div class="yyc-year">${d.year}${isCurrent ? '<span class="yyc-badge">현재</span>' : ''}</div>
+          <div class="yyc-period">${periodLabel}</div>
+        </div>
+        <div class="yyc-right">
+          <div class="yyc-bar-container">
+            <div class="yyc-bar ${isCurrent ? 'current' : ''}" style="width:${pct}%"></div>
+          </div>
+          <div class="yyc-meta">
+            <div class="yyc-revenue">${revText}</div>
+            ${yoyHtml}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `<div class="yyc-list">${rows}</div>`;
+}
+
 // ═══════════════════════════════════════════════════════════
 // 월간 페이지 렌더링
 // ═══════════════════════════════════════════════════════════
@@ -6559,7 +6627,7 @@ function renderMonthYearChart(ym) {
   }
 
   const [y, m] = ym.split('-').map(Number);
-  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort();
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort((a, b) => b - a); // 최근이 위
 
   const pastData = dataYears.map(yr => {
     const yearsBack = y - yr;
@@ -6571,9 +6639,7 @@ function renderMonthYearChart(ym) {
     return { year: yr, yearsBack, targetDate: targetStart, targetEnd, analysis };
   });
 
-  $('monthYearRows').innerHTML = buildYearLineSvg(pastData, 'month')
-    || '<div style="color:var(--ink-faint);font-size:11px;">비교할 과거 데이터 없음</div>';
-  attachYearLineTooltip('#monthYearRows');
+  $('monthYearRows').innerHTML = buildYearCompareList(pastData, 'month');
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -6831,7 +6897,7 @@ function renderYearYearChart(year) {
     return;
   }
 
-  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort();
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort((a, b) => b - a); // 최근이 위
 
   const pastData = dataYears.map(yr => {
     const yearsBack = year - yr;
@@ -6839,9 +6905,7 @@ function renderYearYearChart(year) {
     return { year: yr, yearsBack, targetDate: `${yr}-01-01`, targetEnd: `${yr}-12-31`, analysis };
   });
 
-  $('yearYearRows').innerHTML = buildYearLineSvg(pastData, 'year')
-    || '<div style="color:var(--ink-faint);font-size:11px;">비교할 과거 데이터 없음</div>';
-  attachYearLineTooltip('#yearYearRows');
+  $('yearYearRows').innerHTML = buildYearCompareList(pastData, 'year');
 }
 
 // ═══════════════════════════════════════════════════════════
