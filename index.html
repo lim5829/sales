@@ -25,12 +25,12 @@
     --ink-dim: #52525b;
     --ink-faint: #a1a1aa;
 
-    /* Accent - Blue (Primary) */
-    --accent: #2563eb;
-    --accent-hover: #1d4ed8;
-    --accent-bright: #3b82f6;
-    --accent-soft: rgba(37, 99, 235, 0.08);
-    --accent-tint: #eff6ff;
+    /* Accent - Cobalt Blue (Primary) */
+    --accent: #0047AB;
+    --accent-hover: #003A8C;
+    --accent-bright: #1a5dc4;
+    --accent-soft: rgba(0, 71, 171, 0.08);
+    --accent-tint: #e8f0fc;
 
     /* Semantic */
     --danger: #ef4444;
@@ -41,7 +41,7 @@
     --warn-soft: rgba(245, 158, 11, 0.1);
 
     /* Section colors (섹션 구분용) */
-    --sec-blue: #2563eb;
+    --sec-blue: #0047AB;
     --sec-green: #10b981;
     --sec-purple: #8b5cf6;
     --sec-orange: #f97316;
@@ -49,7 +49,7 @@
     --sec-cyan: #06b6d4;
 
     /* Chart series */
-    --series-1: #2563eb;
+    --series-1: #0047AB;
     --series-2: #10b981;
     --series-3: #f97316;
     --series-4: #8b5cf6;
@@ -349,10 +349,11 @@
 
   .kpi-card.primary {
     grid-column: span 2;
-    padding: 24px 20px;
-    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-    border-color: transparent;
+    padding: 32px 24px;
+    background: #0047AB;
+    border-color: #0047AB;
     color: #fff;
+    border-radius: var(--r-xl);
   }
 
   .kpi-card-label {
@@ -367,6 +368,9 @@
 
   .kpi-card.primary .kpi-card-label {
     color: rgba(255, 255, 255, 0.75);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
   }
 
   .kpi-card-value {
@@ -379,8 +383,11 @@
   }
 
   .kpi-card.primary .kpi-card-value {
-    font-size: 40px;
+    font-size: 48px;
     color: #fff;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
   }
 
   .kpi-card-value .unit {
@@ -391,8 +398,9 @@
   }
 
   .kpi-card.primary .kpi-card-value .unit {
-    font-size: 18px;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.85);
+    font-weight: 600;
   }
 
   .kpi-card-delta {
@@ -1093,12 +1101,12 @@
     overflow: hidden;
   }
 
-  /* 매출 수준에 따른 배경색 강도 (블루) */
-  .cal-cell.lv-1 { background: rgba(37, 99, 235, 0.08); }
-  .cal-cell.lv-2 { background: rgba(37, 99, 235, 0.18); }
-  .cal-cell.lv-3 { background: rgba(37, 99, 235, 0.35); }
-  .cal-cell.lv-4 { background: rgba(37, 99, 235, 0.55); }
-  .cal-cell.lv-5 { background: rgba(37, 99, 235, 0.8); }
+  /* 매출 수준에 따른 배경색 강도 (코발트 블루) */
+  .cal-cell.lv-1 { background: rgba(0, 71, 171, 0.08); }
+  .cal-cell.lv-2 { background: rgba(0, 71, 171, 0.18); }
+  .cal-cell.lv-3 { background: rgba(0, 71, 171, 0.35); }
+  .cal-cell.lv-4 { background: rgba(0, 71, 171, 0.55); }
+  .cal-cell.lv-5 { background: rgba(0, 71, 171, 0.8); }
   .cal-cell.lv-4 .cal-cell-day,
   .cal-cell.lv-5 .cal-cell-day { color: #fff; opacity: 0.9; }
   .cal-cell.lv-4 .cal-cell-amt,
@@ -1407,45 +1415,46 @@
     color: var(--ink-dim);
     font-variant-numeric: tabular-nums;
   }
-  /* 선택한 날 매출 블록 */
+  /* 선택한 날 매출 블록 - 코발트 블루 히어로 */
   .sd-block {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--r-lg);
-    padding: 16px;
+    background: #0047AB;
+    border: 1px solid #0047AB;
+    border-radius: var(--r-xl);
+    padding: 22px 20px;
     margin-bottom: 12px;
-    box-shadow: var(--shadow-sm);
+    box-shadow: 0 4px 16px rgba(0, 71, 171, 0.15);
+    color: #fff;
   }
   .sd-revenue {
     font-family: 'Pretendard', sans-serif;
-    font-size: 28px;
+    font-size: 40px;
     font-weight: 800;
-    color: var(--ink);
-    letter-spacing: -0.03em;
+    color: #fff;
+    letter-spacing: -0.04em;
     font-variant-numeric: tabular-nums;
-    line-height: 1.1;
+    line-height: 1;
   }
   .sd-revenue .u {
-    font-size: 13px;
-    color: var(--ink-faint);
-    margin-left: 3px;
-    font-weight: 500;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-left: 4px;
+    font-weight: 600;
   }
   .sd-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
-    color: var(--ink-faint);
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
   }
   .sd-compares {
     display: flex;
-    gap: 14px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
+    gap: 16px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
     flex-wrap: wrap;
   }
   .sd-compare {
@@ -1455,42 +1464,43 @@
   }
   .sd-compare-label {
     font-size: 10px;
-    color: var(--ink-faint);
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
-    letter-spacing: 0.03em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
   }
   .sd-compare-val {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    margin-top: 2px;
+    margin-top: 3px;
     letter-spacing: -0.01em;
+    color: #fff;
   }
-  .sd-compare-val.up { color: var(--success); }
-  .sd-compare-val.down { color: var(--danger); }
-  .sd-compare-val.flat { color: var(--ink-faint); }
+  .sd-compare-val.up { color: #7efcaa; }
+  .sd-compare-val.down { color: #ffb0b0; }
+  .sd-compare-val.flat { color: rgba(255, 255, 255, 0.6); }
   .sd-compare-sub {
     font-size: 9px;
-    color: var(--ink-faint);
+    color: rgba(255, 255, 255, 0.6);
     font-weight: 500;
     margin-top: 1px;
   }
 
-  /* 시간대 미니 차트 */
+  /* 시간대 미니 차트 (히어로 내부) */
   .sd-hour-chart {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--line);
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
   }
   .sd-hour-label {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
-    color: var(--ink-faint);
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
   .sd-hour-bars {
     display: flex;
@@ -1508,18 +1518,17 @@
   }
   .sd-hour-bar {
     width: 100%;
-    background: var(--accent);
-    opacity: 0.5;
+    background: rgba(255, 255, 255, 0.4);
     border-radius: 3px 3px 0 0;
     min-height: 1px;
     transition: height 0.4s ease;
   }
-  .sd-hour-bar.peak { opacity: 1; background: var(--sec-orange); }
-  .sd-hour-bar.empty { background: var(--bg-muted); opacity: 1; }
+  .sd-hour-bar.peak { background: #fff; }
+  .sd-hour-bar.empty { background: rgba(255, 255, 255, 0.1); }
   .sd-hour-tick {
     font-family: 'JetBrains Mono', monospace;
     font-size: 8px;
-    color: var(--ink-faint);
+    color: rgba(255, 255, 255, 0.6);
     font-weight: 500;
   }
 
@@ -1755,8 +1764,8 @@
     justify-content: center;
     padding: 24px;
     background-image:
-      radial-gradient(ellipse at top, rgba(37, 99, 235, 0.06), transparent 60%),
-      radial-gradient(ellipse at bottom, rgba(37, 99, 235, 0.03), transparent 60%);
+      radial-gradient(ellipse at top, rgba(0, 71, 171, 0.08), transparent 60%),
+      radial-gradient(ellipse at bottom, rgba(0, 71, 171, 0.04), transparent 60%);
   }
   .lock-screen.show { display: flex; animation: fadeIn 0.3s ease; }
 
@@ -3412,7 +3421,7 @@ function renderLineChart() {
 
   const years = Object.keys(byYM).sort();
   const colors = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)'];
-  const colorVals = ['#2563eb', '#10b981', '#f97316', '#8b5cf6', '#06b6d4'];
+  const colorVals = ['#0047AB', '#10b981', '#f97316', '#8b5cf6', '#06b6d4'];
 
   let maxVal = 0;
   years.forEach(y => Object.values(byYM[y]).forEach(v => { if (v > maxVal) maxVal = v; }));
@@ -3554,14 +3563,14 @@ function renderHourly(records) {
     svg += `<text x="${W-PR+7}" y="${y+3}" text-anchor="start" fill="#a1a1aa" font-family="JetBrains Mono" font-size="9">${formatCurrency(maxRev * (1 - i/4))}</text>`;
   }
 
-  svg += `<text x="${PL-7}" y="${PT-10}" text-anchor="end" fill="#2563eb" font-family="JetBrains Mono" font-size="9" letter-spacing="1">건수</text>`;
+  svg += `<text x="${PL-7}" y="${PT-10}" text-anchor="end" fill="#0047AB" font-family="JetBrains Mono" font-size="9" letter-spacing="1">건수</text>`;
   svg += `<text x="${W-PR+7}" y="${PT-10}" text-anchor="start" fill="#6ba55a" font-family="JetBrains Mono" font-size="9" letter-spacing="1">매출</text>`;
 
   hours.forEach((h, i) => {
     const x = PL + (i / hours.length) * CW + (CW / hours.length - barW) / 2;
     const barH = (byHour[h].count / maxCount) * CH;
     const y = PT + CH - barH;
-    svg += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="#2563eb" opacity="0.7" rx="1"/>`;
+    svg += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" opacity="0.7" rx="1"/>`;
   });
 
   const linePath = hours.map((h, i) => {
@@ -4400,11 +4409,12 @@ async function renderTodayMainPage() {
 
   const currentYear = baseDate.getFullYear();
   const dataYears = [...new Set(allRecords.map(r => r.date.slice(0,4)))]
-    .map(Number).filter(y => y < currentYear).sort().reverse();
+    .map(Number).sort().reverse();
 
   const pastData = dataYears.map(y => {
     const yearsBack = currentYear - y;
-    const targetDate = getSameDayOfWeek(todayStr, yearsBack);
+    // 같은 연도는 선택한 날짜 자체, 다른 연도는 같은 요일로 매칭
+    const targetDate = yearsBack === 0 ? todayStr : getSameDayOfWeek(todayStr, yearsBack);
     const analysis = analyzeDayRecords(targetDate);
     return { year: y, yearsBack, targetDate, analysis };
   });
@@ -4416,13 +4426,14 @@ async function renderTodayMainPage() {
     const pct = Math.max(rev / maxRev * 100, rev > 0 ? 2 : 0).toFixed(1);
     const valText = rev > 0 ? rev.toLocaleString() + '원' : '—';
     const tdow = new Date(d.targetDate + 'T12:00:00').getDay();
+    const isCurrent = d.yearsBack === 0;
     return `
       <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[tdow]})">
-        <div class="year-bar-label">${d.year}</div>
+        <div class="year-bar-label ${isCurrent ? 'current' : ''}">${d.year}</div>
         <div class="year-bar-track">
-          <div class="year-bar-fill ${rev > 0 ? 'muted' : 'no-data'}" style="width:${pct}%"></div>
+          <div class="year-bar-fill ${isCurrent ? 'current' : ''} ${rev > 0 ? '' : 'no-data'}" style="width:${pct}%"></div>
         </div>
-        <div class="year-bar-val">${valText}</div>
+        <div class="year-bar-val ${isCurrent ? 'current' : ''}">${valText}</div>
       </div>`;
   }).join('') || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
 
