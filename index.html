@@ -1217,6 +1217,179 @@
   .top-panel { display: none; }
   .top-panel.active { display: block; animation: fadeIn 0.25s ease; }
 
+  /* 요약 패널 플레이스홀더 */
+  .summary-placeholder {
+    text-align: center;
+    padding: 80px 20px;
+    background: var(--bg-soft);
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--r-xl);
+  }
+  .summary-placeholder-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--ink-dim);
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+  .summary-placeholder-sub {
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
+  /* 요약 - 연간 누적 매출 카드 */
+  .ytd-card {
+    background: #0047AB;
+    color: #fff;
+    border-radius: var(--r-xl);
+    padding: 24px 22px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0, 71, 171, 0.18);
+    position: relative;
+    overflow: hidden;
+  }
+  .ytd-card::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 60%;
+    aspect-ratio: 1;
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .ytd-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    position: relative;
+    z-index: 1;
+  }
+  .ytd-card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: rgba(255, 255, 255, 0.75);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .ytd-card-year {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #fff;
+  }
+  .ytd-card-period {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+  .ytd-card-revenue {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    position: relative;
+    z-index: 1;
+  }
+  .ytd-card-revenue .u {
+    font-size: 18px;
+    color: rgba(255, 255, 255, 0.75);
+    margin-left: 4px;
+    font-weight: 600;
+  }
+  .ytd-card-yoy {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    z-index: 1;
+    flex-wrap: wrap;
+  }
+  .ytd-yoy-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ytd-yoy-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .ytd-yoy-val {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ytd-yoy-val.up { color: #7efcaa; }
+  .ytd-yoy-val.down { color: #ffb0b0; }
+  .ytd-yoy-val.flat { color: rgba(255, 255, 255, 0.6); }
+  .ytd-yoy-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+    margin-top: 2px;
+  }
+  .ytd-trend {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+  .ytd-trend-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .ytd-trend-val {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .ytd-trend-val.up { color: #7efcaa; }
+  .ytd-trend-val.down { color: #ffb0b0; }
+  .ytd-trend-val.flat { color: rgba(255, 255, 255, 0.75); }
+  .ytd-trend-spark {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 20px;
+  }
+  .ytd-trend-spark-bar {
+    width: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 2px;
+    min-height: 2px;
+    transition: height 0.4s ease;
+  }
+  .ytd-trend-spark-bar.dim {
+    background: rgba(255, 255, 255, 0.35);
+  }
+
   /* ---------- 오늘 페이지 (메인) ---------- */
   .today-page {}
 
@@ -2355,6 +2528,7 @@
   <nav class="topbar">
     <div class="top-nav">
       <button class="top-nav-tab active" data-top="compare">비교</button>
+      <button class="top-nav-tab" data-top="summary">요약</button>
       <button class="top-nav-tab" data-top="analytics">분석</button>
     </div>
     <div class="topbar-actions">
@@ -2493,6 +2667,14 @@
       </div>
     </div>
     </div> <!-- /top-compare -->
+
+    <!-- ═══ 요약 패널 ═══ -->
+    <div class="top-panel" id="top-summary">
+      <div id="summaryContent">
+        <!-- 연간 누적 매출 카드 -->
+        <div id="ytdRevenueCard"></div>
+      </div>
+    </div>
 
     <!-- ═══ 분석 패널 ═══ -->
     <div class="top-panel" id="top-analytics">
@@ -3459,6 +3641,10 @@ function renderActiveMainTab() {
   const top = topActive.dataset.top;
   if (top === 'analytics') {
     renderDashboard();
+    return;
+  }
+  if (top === 'summary') {
+    renderSummaryPage();
     return;
   }
   // 비교 그룹 안의 현재 서브탭 렌더
@@ -6187,6 +6373,154 @@ function renderYearYearChart(year) {
   attachYearLineTooltip('#yearYearRows');
 }
 
+// ═══════════════════════════════════════════════════════════
+// 요약 페이지 렌더링
+// ═══════════════════════════════════════════════════════════
+function renderSummaryPage() {
+  renderYtdRevenueCard();
+}
+
+// ─── 연간 누적 매출 카드 ───
+function renderYtdRevenueCard() {
+  const container = $('ytdRevenueCard');
+  if (!container) return;
+
+  if (allRecords.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const todayStr = now.toISOString().slice(0, 10);
+  const ytdStart = `${year}-01-01`;
+
+  // 올해 누적 (1/1 ~ 오늘)
+  const ytdData = analyzePeriodRecords(ytdStart, todayStr);
+
+  // 전년 동기간 (전년 1/1 ~ 전년 오늘과 같은 날짜)
+  // 윤년 2/29 등은 28일로 보정해야 하나 간단히 월-일 복제
+  const lastYear = year - 1;
+  const [, mm, dd] = todayStr.split('-');
+  let lastYearTodayStr = `${lastYear}-${mm}-${dd}`;
+  // 유효성 체크 (2/29 → 2/28 보정)
+  const validationDate = new Date(lastYearTodayStr + 'T12:00:00');
+  if (validationDate.toISOString().slice(0, 10) !== lastYearTodayStr) {
+    lastYearTodayStr = `${lastYear}-02-28`;
+  }
+  const lastYtdData = analyzePeriodRecords(`${lastYear}-01-01`, lastYearTodayStr);
+
+  // 최근 3개월 트렌드 (이번달 포함 이전 3개월 vs 그 전 3개월)
+  // 더 간단한 방식: 최근 3개월의 월별 매출 비교
+  const last3Months = [];
+  for (let i = 2; i >= 0; i--) {
+    const d = new Date(year, now.getMonth() - i, 1);
+    const m = d.getMonth();
+    const y = d.getFullYear();
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    // 이번달이면 오늘까지만
+    const startStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+    let endStr;
+    if (i === 0) {
+      endStr = todayStr;
+    } else {
+      endStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+    const data = analyzePeriodRecords(startStr, endStr);
+    last3Months.push({
+      year: y,
+      month: m + 1,
+      revenue: data?.revenue || 0,
+      isPartial: i === 0 && now.getDate() < lastDay
+    });
+  }
+
+  // 트렌드 방향: 3개월간 선형 증감 추이
+  let trendDirection = 'flat';
+  let trendPct = 0;
+  if (last3Months.every(m => m.revenue > 0)) {
+    // 일평균으로 정규화해서 비교 (이번달 부분 월 보정)
+    const getAvgPerDay = (m, idx) => {
+      if (idx === 2 && m.isPartial) {
+        return m.revenue / now.getDate();
+      }
+      const lastDay = new Date(m.year, m.month, 0).getDate();
+      return m.revenue / lastDay;
+    };
+    const avg0 = getAvgPerDay(last3Months[0], 0);
+    const avg2 = getAvgPerDay(last3Months[2], 2);
+    if (avg0 > 0) {
+      trendPct = ((avg2 - avg0) / avg0) * 100;
+      if (trendPct > 3) trendDirection = 'up';
+      else if (trendPct < -3) trendDirection = 'down';
+    }
+  }
+
+  // 스파크라인 바: 3개월 매출 (상대 높이)
+  const maxMonthRev = Math.max(...last3Months.map(m => m.revenue), 1);
+  const sparkBars = last3Months.map((m, i) => {
+    const heightPct = (m.revenue / maxMonthRev) * 100;
+    const cls = i === 2 ? '' : 'dim';
+    return `<div class="ytd-trend-spark-bar ${cls}" style="height:${Math.max(heightPct, 8)}%;" title="${m.year}.${String(m.month).padStart(2,'0')}: ${m.revenue.toLocaleString()}원"></div>`;
+  }).join('');
+
+  // YoY 계산
+  const ytdRev = ytdData?.revenue || 0;
+  const lastRev = lastYtdData?.revenue || 0;
+  let yoyHtml;
+  if (!lastYtdData || lastRev === 0) {
+    yoyHtml = `
+      <div class="ytd-yoy-val flat">—</div>
+      <div class="ytd-yoy-sub">전년 동기 데이터 없음</div>`;
+  } else {
+    const diff = ytdRev - lastRev;
+    const yoyPct = (diff / lastRev) * 100;
+    const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+    const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '―');
+    const sign = diff > 0 ? '+' : '';
+    yoyHtml = `
+      <div class="ytd-yoy-val ${cls}">${arrow} ${sign}${yoyPct.toFixed(1)}%</div>
+      <div class="ytd-yoy-sub">vs ${lastYear}년 동기 ${lastRev.toLocaleString()}원</div>`;
+  }
+
+  // 트렌드 아이콘/텍스트
+  const trendArrow = trendDirection === 'up' ? '↑'
+                   : trendDirection === 'down' ? '↓'
+                   : '→';
+  const trendText = trendDirection === 'up' ? '상승세'
+                  : trendDirection === 'down' ? '하락세'
+                  : '유지';
+
+  // 기간 표시
+  const periodLabel = `${year}.01.01 ~ ${todayStr.replace(/-/g, '.')}`;
+
+  container.innerHTML = `
+    <div class="ytd-card">
+      <div class="ytd-card-header">
+        <div>
+          <div class="ytd-card-label">연간 누적 매출</div>
+          <div class="ytd-card-period" style="margin-top:4px;">${periodLabel}</div>
+        </div>
+        <div class="ytd-card-year">${year}</div>
+      </div>
+      <div class="ytd-card-revenue">${ytdRev.toLocaleString()}<span class="u">원</span></div>
+      <div class="ytd-card-yoy">
+        <div class="ytd-yoy-left">
+          <div class="ytd-yoy-label">전년 동기 대비 (YoY)</div>
+          ${yoyHtml}
+        </div>
+        <div class="ytd-trend">
+          <div class="ytd-trend-label">최근 3개월</div>
+          <div class="ytd-trend-val ${trendDirection}">
+            ${trendArrow} ${trendText}
+            <span class="ytd-trend-spark">${sparkBars}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function openTodayModal() {
   openModal('todayModal');
 
@@ -6329,6 +6663,8 @@ function setupEvents() {
       const m = tab.dataset.top;
       if (m === 'analytics') {
         renderDashboard();
+      } else if (m === 'summary') {
+        renderSummaryPage();
       } else if (m === 'compare') {
         // 현재 활성화된 비교 서브탭 렌더
         const active = document.querySelector('.main-tab.active');
