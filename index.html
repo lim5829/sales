@@ -2390,6 +2390,7 @@
         <button class="main-tab active" data-main="today">오늘</button>
         <button class="main-tab" data-main="week">주간</button>
         <button class="main-tab" data-main="month">월간</button>
+        <button class="main-tab" data-main="year">연간</button>
       </div>
 
     <!-- ===== 오늘 탭 ===== -->
@@ -2461,6 +2462,31 @@
         <div class="year-bar-chart" id="monthYearChart">
           <div class="year-bar-title">같은 달 연도별 매출 비교</div>
           <div class="year-bar-rows" id="monthYearRows">
+            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 연간 탭 ===== -->
+    <div class="main-panel" id="main-year">
+      <div class="today-page">
+        <div class="today-top-info">
+          <button class="today-nav-btn" id="yearNavPrev" title="이전 해">‹</button>
+          <div style="text-align:center;">
+            <div class="today-page-date" id="mainYearDate">—</div>
+            <div class="today-page-dow" id="mainYearDow">—</div>
+          </div>
+          <button class="today-nav-btn" id="yearNavNext" title="다음 해">›</button>
+        </div>
+        <!-- 선택한 연도 매출 (데이터 있을 때만) -->
+        <div id="selectedYearBlock" style="display:none"></div>
+        <!-- 월별 매출 비교 차트 (데이터 있을 때만) -->
+        <div id="monthlyCompareBlock" style="display:none"></div>
+        <!-- 연도별 전체 매출 꺾은선 -->
+        <div class="year-bar-chart" id="yearYearChart">
+          <div class="year-bar-title">연도별 전체 매출 비교</div>
+          <div class="year-bar-rows" id="yearYearRows">
             <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
           </div>
         </div>
@@ -3442,6 +3468,7 @@ function renderActiveMainTab() {
   if (m === 'today') renderTodayMainPage().catch(e => console.warn(e));
   else if (m === 'week') renderWeekMainPage().catch(e => console.warn(e));
   else if (m === 'month') renderMonthMainPage().catch(e => console.warn(e));
+  else if (m === 'year') renderYearMainPage().catch(e => console.warn(e));
 }
 
 function filterByPeriod(records, period) {
@@ -4642,10 +4669,11 @@ function getTodayPageDateStr() {
   return todayPageDate;
 }
 
-// ─────── 주간/월간 상태 ───────
+// ─────── 주간/월간/연간 상태 ───────
 // 주간: 월요일 기준. 해당 주의 '월요일 YYYY-MM-DD' 저장
 let weekPageMonday = null;   // null = 이번 주
 let monthPageYm = null;      // null = 이번 달 ('YYYY-MM' 형식)
+let yearPageYear = null;     // null = 올해 (숫자, 예: 2026)
 
 // 날짜의 해당 주 월요일 반환 (월-일 기준)
 function getMondayOf(dateStr) {
@@ -4681,6 +4709,13 @@ function getMonthPageYm() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   }
   return monthPageYm;
+}
+
+function getYearPageYear() {
+  if (!yearPageYear) {
+    return new Date().getFullYear();
+  }
+  return yearPageYear;
 }
 
 // 기간 집계 함수 (시작일~종료일 inclusive)
@@ -5159,6 +5194,8 @@ function buildYearLineSvg(chartData, mode) {
     } else if (mode === 'month') {
       const [, mm] = d.targetDate.split('-');
       subLabel = `${mm}월`;
+    } else if (mode === 'year') {
+      subLabel = '1/1~12/31';
     } else {
       subLabel = `${d.targetDate.slice(5).replace('-', '.')} ${DOW_KO[tdow]}`;
     }
@@ -5221,12 +5258,14 @@ function attachYearLineTooltip(selector) {
     } else if (p.mode === 'month') {
       const [yy, mm] = p.targetDate.split('-');
       dateLabel = `${yy}.${mm}`;
+    } else if (p.mode === 'year') {
+      dateLabel = `${p.year}년`;
     } else {
       dateLabel = `${p.targetDate.replace(/-/g, '.')} ${p.dow}`;
     }
 
     let metaHtml;
-    if (p.mode === 'week' || p.mode === 'month') {
+    if (p.mode === 'week' || p.mode === 'month' || p.mode === 'year') {
       metaHtml = `
         <span>${p.openDays}일 영업</span>
         <span>일평균 ${p.dailyAvg.toLocaleString()}원</span>
@@ -5880,6 +5919,274 @@ function renderMonthYearChart(ym) {
   attachYearLineTooltip('#monthYearRows');
 }
 
+// ═══════════════════════════════════════════════════════════
+// 연간 페이지 렌더링
+// ═══════════════════════════════════════════════════════════
+async function renderYearMainPage() {
+  const y = getYearPageYear();
+  const startStr = `${y}-01-01`;
+  const endStr = `${y}-12-31`;
+  const currentYear = new Date().getFullYear();
+  const isThisYear = y === currentYear;
+
+  // 헤더
+  $('mainYearDate').innerHTML = `<em>${y}</em>년`;
+  $('mainYearDow').textContent = isThisYear ? '올해' : `${y}년`;
+
+  // 현재 연도 분석
+  const selectedAnalysis = analyzePeriodRecords(startStr, endStr);
+  const sdBlock = $('selectedYearBlock');
+
+  if (selectedAnalysis && selectedAnalysis.revenue > 0) {
+    // 전년 / 전전년 / 전전전년
+    const y1Data = analyzePeriodRecords(`${y - 1}-01-01`, `${y - 1}-12-31`);
+    const y2Data = analyzePeriodRecords(`${y - 2}-01-01`, `${y - 2}-12-31`);
+    const y3Data = analyzePeriodRecords(`${y - 3}-01-01`, `${y - 3}-12-31`);
+
+    const renderCompare = (curr, prev, label, prevLabelStr) => {
+      if (!prev || prev.revenue === 0) {
+        return `
+          <div class="sd-compare">
+            <span class="sd-compare-label">${label}</span>
+            <span class="sd-compare-val flat">—</span>
+            <span class="sd-compare-sub">데이터 없음</span>
+          </div>`;
+      }
+      const diff = curr.revenue - prev.revenue;
+      const pct = (diff / prev.revenue * 100).toFixed(1);
+      const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      const arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '―');
+      const sign = diff > 0 ? '+' : '';
+      return `
+        <div class="sd-compare">
+          <span class="sd-compare-label">${label}</span>
+          <span class="sd-compare-val ${cls}">${arrow} ${sign}${pct}%</span>
+          <span class="sd-compare-sub">${prevLabelStr} · ${prev.revenue.toLocaleString()}원</span>
+        </div>`;
+    };
+
+    const peakDayLabel = selectedAnalysis.peakDay
+      ? `${selectedAnalysis.peakDay} (${DOW_KO[new Date(selectedAnalysis.peakDay + 'T12:00:00').getDay()]})`
+      : null;
+
+    // 월별 매출에서 피크 월 찾기
+    const monthlyRev = {};
+    Object.entries(selectedAnalysis.dailyRev).forEach(([date, amt]) => {
+      const ym = date.slice(0, 7);
+      monthlyRev[ym] = (monthlyRev[ym] || 0) + amt;
+    });
+    let peakMonth = null, peakMonthAmt = 0;
+    Object.entries(monthlyRev).forEach(([ym, amt]) => {
+      if (amt > peakMonthAmt) { peakMonthAmt = amt; peakMonth = ym; }
+    });
+    const peakMonthLabel = peakMonth ? `${parseInt(peakMonth.slice(5))}월` : null;
+
+    sdBlock.innerHTML = `
+      <div class="sd-block">
+        <div class="sd-label">${isThisYear ? '올해' : '선택한 연도'} 매출</div>
+        <div class="sd-revenue">${selectedAnalysis.revenue.toLocaleString()}<span class="u">원</span></div>
+        <div style="margin-top:6px; font-family:'Pretendard',sans-serif; font-size:11px; color:rgba(255,255,255,0.75);">
+          ${selectedAnalysis.openDays}일 영업 · 일평균 ${selectedAnalysis.dailyAvg.toLocaleString()}원${peakMonthLabel ? ` · 피크 ${peakMonthLabel}` : ''}
+        </div>
+        <div class="sd-compares">
+          ${renderCompare(selectedAnalysis, y1Data, '전년 대비', `${y - 1}년`)}
+          ${renderCompare(selectedAnalysis, y2Data, '전전년 대비', `${y - 2}년`)}
+          ${renderCompare(selectedAnalysis, y3Data, '3년 전 대비', `${y - 3}년`)}
+        </div>
+      </div>`;
+    sdBlock.style.display = '';
+  } else {
+    sdBlock.innerHTML = `
+      <div class="sd-empty-block">
+        <div class="sd-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
+            <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="sd-empty-title">${isThisYear ? '올해 매출 데이터가 없어요' : '이 연도의 데이터가 없어요'}</div>
+        <div class="sd-empty-sub">POS 엑셀을 업로드하거나 수기로 입력해 주세요</div>
+      </div>`;
+    sdBlock.style.display = '';
+  }
+
+  // 월별 비교 차트
+  renderMonthlyCompare(y, selectedAnalysis);
+
+  // 연도별 전체 매출 꺾은선
+  renderYearYearChart(y);
+}
+
+// 월별 비교 (선택 연도 vs 비교 연도, 12개월)
+let yearCompareYearsBack = null;
+
+function renderMonthlyCompare(year, selectedAnalysis) {
+  const block = $('monthlyCompareBlock');
+  if (!block) return;
+
+  if (!selectedAnalysis || selectedAnalysis.revenue === 0) {
+    block.style.display = 'none';
+    block.innerHTML = '';
+    return;
+  }
+
+  const availableYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).filter(yr => yr < year).sort().reverse();
+
+  if (yearCompareYearsBack === null || !availableYears.includes(year - yearCompareYearsBack)) {
+    yearCompareYearsBack = availableYears.length > 0 ? year - availableYears[0] : 1;
+  }
+
+  const compareYear = year - yearCompareYearsBack;
+  const cmpAnalysis = analyzePeriodRecords(`${compareYear}-01-01`, `${compareYear}-12-31`);
+
+  // 선택 연도의 월별 매출 (1~12월)
+  const aMonthly = new Array(12).fill(0);
+  Object.entries(selectedAnalysis.dailyRev).forEach(([date, amt]) => {
+    const m = parseInt(date.slice(5, 7)) - 1;
+    aMonthly[m] += amt;
+  });
+
+  // 비교 연도의 월별 매출
+  const bMonthly = new Array(12).fill(0);
+  if (cmpAnalysis) {
+    Object.entries(cmpAnalysis.dailyRev).forEach(([date, amt]) => {
+      const m = parseInt(date.slice(5, 7)) - 1;
+      bMonthly[m] += amt;
+    });
+  }
+
+  const yearOptions = availableYears.length > 0
+    ? availableYears.map(yr => {
+        const yb = year - yr;
+        return `<option value="${yb}" ${yb === yearCompareYearsBack ? 'selected' : ''}>${yr}년</option>`;
+      }).join('')
+    : '<option disabled selected>-</option>';
+
+  const hasCompare = cmpAnalysis && cmpAnalysis.revenue > 0;
+  const chartSvg = buildMonthlyCompareSvg(aMonthly, hasCompare ? bMonthly : null);
+  const thisLabel = (year === new Date().getFullYear()) ? '올해' : '선택연도';
+
+  block.innerHTML = `
+    <div class="hc-block">
+      <div class="hc-header">
+        <div class="hc-title">월별 비교</div>
+        <div class="hc-year-select-wrap">
+          <span class="hc-year-label">vs</span>
+          <select class="hc-year-select" onchange="setYearCompareYear(this.value)" ${availableYears.length === 0 ? 'disabled' : ''}>
+            ${yearOptions}
+          </select>
+        </div>
+      </div>
+      ${hasCompare ? `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${thisLabel} (${year}년)</div>
+        <div class="hc-legend-item"><span class="hc-legend-dot b"></span>${compareYear}년</div>
+      </div>` : `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${thisLabel}</div>
+        <div class="hc-legend-item" style="color:var(--ink-faint);">${compareYear}년 데이터 없음</div>
+      </div>`}
+      <div class="hc-chart-wrap">${chartSvg}</div>
+    </div>`;
+  block.style.display = '';
+}
+
+function setYearCompareYear(yearsBack) {
+  yearCompareYearsBack = parseInt(yearsBack);
+  renderYearMainPage();
+}
+
+// 월별 비교 SVG (1~12월)
+function buildMonthlyCompareSvg(aData, bData) {
+  const labels = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+  const W = 720, H = 240;
+  const PL = 52, PR = 12, PT = 18, PB = 34;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+  const n = labels.length;
+  const groupW = cw / n;
+  const hasB = bData != null;
+
+  const maxVal = Math.max(...aData, ...(hasB ? bData : [0]), 1);
+  const niceMax = (v => {
+    if (v <= 100000) return Math.ceil(v / 20000) * 20000;
+    if (v <= 1000000) return Math.ceil(v / 200000) * 200000;
+    if (v <= 10000000) return Math.ceil(v / 2000000) * 2000000;
+    if (v <= 100000000) return Math.ceil(v / 20000000) * 20000000;
+    return Math.ceil(v / 100000000) * 100000000;
+  })(maxVal);
+  const yScale = v => ch - (v / niceMax) * ch;
+
+  let svg = `<svg class="hc-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = (niceMax / steps) * i;
+    const yy = PT + yScale(v);
+    svg += `<line x1="${PL}" y1="${yy}" x2="${W - PR}" y2="${yy}" stroke="#e4e4e7" stroke-width="1" stroke-dasharray="${i === 0 ? '0' : '2,2'}"/>`;
+    let label;
+    if (v >= 100000000) label = (v / 100000000).toFixed(1) + '억';
+    else if (v >= 10000) label = (v / 10000) + '만';
+    else if (v >= 1000) label = (v / 1000) + 'K';
+    else label = v.toString();
+    svg += `<text x="${PL - 6}" y="${yy + 3}" text-anchor="end" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${label}</text>`;
+  }
+  svg += `<text x="${PL - 44}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
+
+  if (hasB) {
+    const barW = Math.max(2, (groupW - 6) / 2 - 1);
+    labels.forEach((lbl, i) => {
+      const cx = PL + groupW * i + groupW / 2;
+      if (aData[i] > 0) {
+        const y = PT + yScale(aData[i]);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx - barW - 1}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="1.5"/>`;
+      }
+      if (bData[i] > 0) {
+        const y = PT + yScale(bData[i]);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx + 1}" y="${y}" width="${barW}" height="${barH}" fill="#c9d8f0" rx="1.5"/>`;
+      }
+      svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="600">${lbl}월</text>`;
+    });
+  } else {
+    const barW = Math.max(3, groupW - 6);
+    labels.forEach((lbl, i) => {
+      const cx = PL + groupW * i + groupW / 2;
+      if (aData[i] > 0) {
+        const y = PT + yScale(aData[i]);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx - barW/2}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="2"/>`;
+      }
+      svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="600">${lbl}월</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+// 연도별 전체 매출 꺾은선
+function renderYearYearChart(year) {
+  if (allRecords.length === 0) {
+    $('yearYearRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
+    return;
+  }
+
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort();
+
+  const pastData = dataYears.map(yr => {
+    const yearsBack = year - yr;
+    const analysis = analyzePeriodRecords(`${yr}-01-01`, `${yr}-12-31`);
+    return { year: yr, yearsBack, targetDate: `${yr}-01-01`, targetEnd: `${yr}-12-31`, analysis };
+  });
+
+  $('yearYearRows').innerHTML = buildYearLineSvg(pastData, 'year')
+    || '<div style="color:var(--ink-faint);font-size:11px;">비교할 과거 데이터 없음</div>';
+  attachYearLineTooltip('#yearYearRows');
+}
+
 async function openTodayModal() {
   openModal('todayModal');
 
@@ -6030,6 +6337,7 @@ function setupEvents() {
           if (sub === 'today') renderTodayMainPage().catch(e => console.warn(e));
           else if (sub === 'week') renderWeekMainPage().catch(e => console.warn(e));
           else if (sub === 'month') renderMonthMainPage().catch(e => console.warn(e));
+          else if (sub === 'year') renderYearMainPage().catch(e => console.warn(e));
         }
       }
     });
@@ -6046,6 +6354,7 @@ function setupEvents() {
       const m = tab.dataset.main;
       if (m === 'week') renderWeekMainPage().catch(e => console.warn('week render:', e));
       else if (m === 'month') renderMonthMainPage().catch(e => console.warn('month render:', e));
+      else if (m === 'year') renderYearMainPage().catch(e => console.warn('year render:', e));
       else if (m === 'today') renderTodayMainPage().catch(e => console.warn('today render:', e));
     });
   });
@@ -6072,6 +6381,18 @@ function setupEvents() {
   if (monthNext) monthNext.addEventListener('click', () => {
     monthPageYm = addMonths(getMonthPageYm(), 1);
     renderMonthMainPage().catch(e => console.warn(e));
+  });
+
+  // 연간 네비게이션
+  const yearPrev = $('yearNavPrev');
+  const yearNext = $('yearNavNext');
+  if (yearPrev) yearPrev.addEventListener('click', () => {
+    yearPageYear = getYearPageYear() - 1;
+    renderYearMainPage().catch(e => console.warn(e));
+  });
+  if (yearNext) yearNext.addEventListener('click', () => {
+    yearPageYear = getYearPageYear() + 1;
+    renderYearMainPage().catch(e => console.warn(e));
   });
 
   $('btnData').addEventListener('click', async () => {
