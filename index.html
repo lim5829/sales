@@ -3169,115 +3169,10 @@
 
   <!-- 메인 콘텐츠 -->
   <div class="dashboard" id="dashboard">
-    <!-- ═══ 비교 그룹 (오늘/주간/월간) ═══ -->
+    <!-- ═══ 비교 패널 (월별 연도 비교) ═══ -->
     <div class="top-panel" id="top-compare">
-      <div class="main-tabs">
-        <button class="main-tab active" data-main="today">오늘</button>
-        <button class="main-tab" data-main="week">주간</button>
-        <button class="main-tab" data-main="month">월간</button>
-        <button class="main-tab" data-main="year">연간</button>
-      </div>
-
-    <!-- ===== 오늘 탭 ===== -->
-    <div class="main-panel active" id="main-today">
-      <div class="today-page">
-        <div class="today-top-info">
-          <button class="today-nav-btn" id="todayNavPrev" title="이전 날">‹</button>
-          <div style="text-align:center;">
-            <div class="today-page-date" id="mainTodayDate">—</div>
-            <div class="today-page-dow" id="mainTodayDow">—</div>
-          </div>
-          <button class="today-nav-btn" id="todayNavNext" title="다음 날">›</button>
-        </div>
-        <!-- 선택한 날 매출 (데이터 있을 때만) -->
-        <div id="selectedDayBlock" style="display:none"></div>
-        <!-- 시간대별 비교 차트 (데이터 있을 때만) -->
-        <div id="hourlyCompareBlock" style="display:none"></div>
-        <!-- 연도별 바 차트 -->
-        <div class="year-bar-chart" id="yearBarChart">
-          <div class="year-bar-title">같은 요일 연도별 매출 비교</div>
-          <div class="year-bar-rows" id="yearBarRows">
-            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
-          </div>
-        </div>
-      </div>
+      <div id="monthlyBreakdownCard"></div>
     </div>
-
-    <!-- ===== 주간 탭 ===== -->
-    <div class="main-panel" id="main-week">
-      <div class="today-page">
-        <div class="today-top-info">
-          <button class="today-nav-btn" id="weekNavPrev" title="이전 주">‹</button>
-          <div style="text-align:center;">
-            <div class="today-page-date" id="mainWeekDate">—</div>
-            <div class="today-page-dow" id="mainWeekDow">—</div>
-          </div>
-          <button class="today-nav-btn" id="weekNavNext" title="다음 주">›</button>
-        </div>
-        <!-- 선택한 주 매출 (데이터 있을 때만) -->
-        <div id="selectedWeekBlock" style="display:none"></div>
-        <!-- 요일별 비교 차트 (데이터 있을 때만) -->
-        <div id="dowCompareBlock" style="display:none"></div>
-        <!-- 연도별 주간 매출 꺾은선 -->
-        <div class="year-bar-chart" id="weekYearChart">
-          <div class="year-bar-title">같은 주차 연도별 매출 비교</div>
-          <div class="year-bar-rows" id="weekYearRows">
-            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 월간 탭 ===== -->
-    <div class="main-panel" id="main-month">
-      <div class="today-page">
-        <div class="today-top-info">
-          <button class="today-nav-btn" id="monthNavPrev" title="이전 달">‹</button>
-          <div style="text-align:center;">
-            <div class="today-page-date" id="mainMonthDate">—</div>
-            <div class="today-page-dow" id="mainMonthDow">—</div>
-          </div>
-          <button class="today-nav-btn" id="monthNavNext" title="다음 달">›</button>
-        </div>
-        <!-- 선택한 달 매출 (데이터 있을 때만) -->
-        <div id="selectedMonthBlock" style="display:none"></div>
-        <!-- 일자별 매출 차트 (데이터 있을 때만) -->
-        <div id="dailyCompareBlock" style="display:none"></div>
-        <!-- 연도별 같은 달 매출 꺾은선 -->
-        <div class="year-bar-chart" id="monthYearChart">
-          <div class="year-bar-title">같은 달 연도별 매출 비교</div>
-          <div class="year-bar-rows" id="monthYearRows">
-            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 연간 탭 ===== -->
-    <div class="main-panel" id="main-year">
-      <div class="today-page">
-        <div class="today-top-info">
-          <button class="today-nav-btn" id="yearNavPrev" title="이전 해">‹</button>
-          <div style="text-align:center;">
-            <div class="today-page-date" id="mainYearDate">—</div>
-            <div class="today-page-dow" id="mainYearDow">—</div>
-          </div>
-          <button class="today-nav-btn" id="yearNavNext" title="다음 해">›</button>
-        </div>
-        <!-- 선택한 연도 매출 (데이터 있을 때만) -->
-        <div id="selectedYearBlock" style="display:none"></div>
-        <!-- 월별 매출 비교 차트 (데이터 있을 때만) -->
-        <div id="monthlyCompareBlock" style="display:none"></div>
-        <!-- 연도별 전체 매출 꺾은선 -->
-        <div class="year-bar-chart" id="yearYearChart">
-          <div class="year-bar-title">연도별 전체 매출 비교</div>
-          <div class="year-bar-rows" id="yearYearRows">
-            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div> <!-- /top-compare -->
 
     <!-- ═══ 요약 패널 ═══ -->
     <div class="top-panel active" id="top-summary">
@@ -3288,8 +3183,6 @@
         <div id="multiYearLineCard"></div>
         <!-- 인사이트 카드 -->
         <div id="insightsCard"></div>
-        <!-- 월별 연도 비교 (1~12월 세로 리스트) -->
-        <div id="monthlyBreakdownCard"></div>
       </div>
     </div>
 
@@ -4258,20 +4151,11 @@ function renderActiveMainTab() {
   const top = topActive.dataset.top;
   if (top === 'analytics') {
     renderDashboard();
-    return;
-  }
-  if (top === 'summary') {
+  } else if (top === 'summary') {
     renderSummaryPage();
-    return;
+  } else if (top === 'compare') {
+    renderMonthlyBreakdownCard();
   }
-  // 비교 그룹 안의 현재 서브탭 렌더
-  const subActive = document.querySelector('.main-tab.active');
-  if (!subActive) return;
-  const m = subActive.dataset.main;
-  if (m === 'today') renderTodayMainPage().catch(e => console.warn(e));
-  else if (m === 'week') renderWeekMainPage().catch(e => console.warn(e));
-  else if (m === 'month') renderMonthMainPage().catch(e => console.warn(e));
-  else if (m === 'year') renderYearMainPage().catch(e => console.warn(e));
 }
 
 function filterByPeriod(records, period) {
@@ -8043,21 +7927,6 @@ function setupEvents() {
   setupCalendarEvents();
 
   // 톱바 아이콘
-  // 오늘 탭 날짜 화살표
-  $('todayNavPrev').addEventListener('click', () => {
-    const base = new Date(getTodayPageDateStr() + 'T12:00:00');
-    base.setDate(base.getDate() - 1);
-    todayPageDate = base.toISOString().slice(0, 10);
-    renderTodayMainPage().catch(e => console.warn(e));
-  });
-  $('todayNavNext').addEventListener('click', () => {
-    const base = new Date(getTodayPageDateStr() + 'T12:00:00');
-    base.setDate(base.getDate() + 1);
-    const next = base.toISOString().slice(0, 10);
-    todayPageDate = next === new Date().toISOString().slice(0, 10) ? null : next;
-    renderTodayMainPage().catch(e => console.warn(e));
-  });
-
   $('btnToday').addEventListener('click', () => {
     if (allRecords.length === 0) { toast('데이터가 없습니다', 'error'); return; }
     openTodayModal();
@@ -8077,69 +7946,9 @@ function setupEvents() {
       } else if (m === 'summary') {
         renderSummaryPage();
       } else if (m === 'compare') {
-        // 현재 활성화된 비교 서브탭 렌더
-        const active = document.querySelector('.main-tab.active');
-        if (active) {
-          const sub = active.dataset.main;
-          if (sub === 'today') renderTodayMainPage().catch(e => console.warn(e));
-          else if (sub === 'week') renderWeekMainPage().catch(e => console.warn(e));
-          else if (sub === 'month') renderMonthMainPage().catch(e => console.warn(e));
-          else if (sub === 'year') renderYearMainPage().catch(e => console.warn(e));
-        }
+        renderMonthlyBreakdownCard();
       }
     });
-  });
-
-  // 비교 그룹 내 서브탭 (오늘/주간/월간)
-  document.querySelectorAll('.main-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.main-panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      $('main-' + tab.dataset.main).classList.add('active');
-
-      const m = tab.dataset.main;
-      if (m === 'week') renderWeekMainPage().catch(e => console.warn('week render:', e));
-      else if (m === 'month') renderMonthMainPage().catch(e => console.warn('month render:', e));
-      else if (m === 'year') renderYearMainPage().catch(e => console.warn('year render:', e));
-      else if (m === 'today') renderTodayMainPage().catch(e => console.warn('today render:', e));
-    });
-  });
-
-  // 주간 네비게이션
-  const weekPrev = $('weekNavPrev');
-  const weekNext = $('weekNavNext');
-  if (weekPrev) weekPrev.addEventListener('click', () => {
-    weekPageMonday = addDays(getWeekPageMonday(), -7);
-    renderWeekMainPage().catch(e => console.warn(e));
-  });
-  if (weekNext) weekNext.addEventListener('click', () => {
-    weekPageMonday = addDays(getWeekPageMonday(), 7);
-    renderWeekMainPage().catch(e => console.warn(e));
-  });
-
-  // 월간 네비게이션
-  const monthPrev = $('monthNavPrev');
-  const monthNext = $('monthNavNext');
-  if (monthPrev) monthPrev.addEventListener('click', () => {
-    monthPageYm = addMonths(getMonthPageYm(), -1);
-    renderMonthMainPage().catch(e => console.warn(e));
-  });
-  if (monthNext) monthNext.addEventListener('click', () => {
-    monthPageYm = addMonths(getMonthPageYm(), 1);
-    renderMonthMainPage().catch(e => console.warn(e));
-  });
-
-  // 연간 네비게이션
-  const yearPrev = $('yearNavPrev');
-  const yearNext = $('yearNavNext');
-  if (yearPrev) yearPrev.addEventListener('click', () => {
-    yearPageYear = getYearPageYear() - 1;
-    renderYearMainPage().catch(e => console.warn(e));
-  });
-  if (yearNext) yearNext.addEventListener('click', () => {
-    yearPageYear = getYearPageYear() + 1;
-    renderYearMainPage().catch(e => console.warn(e));
   });
 
   $('btnData').addEventListener('click', async () => {
