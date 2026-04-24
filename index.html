@@ -1182,7 +1182,7 @@
   }
   .main-tab {
     flex: 1;
-    padding: 12px 8px;
+    padding: 12px 4px;
     background: transparent;
     border: none;
     font-family: 'Pretendard', sans-serif;
@@ -2371,6 +2371,8 @@
   <div class="dashboard" id="dashboard">
     <div class="main-tabs">
       <button class="main-tab active" data-main="today">오늘</button>
+      <button class="main-tab" data-main="week">주간</button>
+      <button class="main-tab" data-main="month">월간</button>
       <button class="main-tab" data-main="analytics">분석</button>
     </div>
 
@@ -2393,6 +2395,56 @@
         <div class="year-bar-chart" id="yearBarChart">
           <div class="year-bar-title">같은 요일 연도별 매출 비교</div>
           <div class="year-bar-rows" id="yearBarRows">
+            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 주간 탭 ===== -->
+    <div class="main-panel" id="main-week">
+      <div class="today-page">
+        <div class="today-top-info">
+          <button class="today-nav-btn" id="weekNavPrev" title="이전 주">‹</button>
+          <div style="text-align:center;">
+            <div class="today-page-date" id="mainWeekDate">—</div>
+            <div class="today-page-dow" id="mainWeekDow">—</div>
+          </div>
+          <button class="today-nav-btn" id="weekNavNext" title="다음 주">›</button>
+        </div>
+        <!-- 선택한 주 매출 (데이터 있을 때만) -->
+        <div id="selectedWeekBlock" style="display:none"></div>
+        <!-- 요일별 비교 차트 (데이터 있을 때만) -->
+        <div id="dowCompareBlock" style="display:none"></div>
+        <!-- 연도별 주간 매출 꺾은선 -->
+        <div class="year-bar-chart" id="weekYearChart">
+          <div class="year-bar-title">같은 주차 연도별 매출 비교</div>
+          <div class="year-bar-rows" id="weekYearRows">
+            <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 월간 탭 ===== -->
+    <div class="main-panel" id="main-month">
+      <div class="today-page">
+        <div class="today-top-info">
+          <button class="today-nav-btn" id="monthNavPrev" title="이전 달">‹</button>
+          <div style="text-align:center;">
+            <div class="today-page-date" id="mainMonthDate">—</div>
+            <div class="today-page-dow" id="mainMonthDow">—</div>
+          </div>
+          <button class="today-nav-btn" id="monthNavNext" title="다음 달">›</button>
+        </div>
+        <!-- 선택한 달 매출 (데이터 있을 때만) -->
+        <div id="selectedMonthBlock" style="display:none"></div>
+        <!-- 일자별 매출 차트 (데이터 있을 때만) -->
+        <div id="dailyCompareBlock" style="display:none"></div>
+        <!-- 연도별 같은 달 매출 꺾은선 -->
+        <div class="year-bar-chart" id="monthYearChart">
+          <div class="year-bar-title">같은 달 연도별 매출 비교</div>
+          <div class="year-bar-rows" id="monthYearRows">
             <div style="color:var(--ink-faint); font-size:12px; font-family:'JetBrains Mono',monospace;">불러오는 중…</div>
           </div>
         </div>
@@ -3352,9 +3404,20 @@ async function refreshAll() {
     $('dataBadge').classList.remove('show');
     rebuildPeriodChips();
     renderDashboard();
-    // 오늘 탭 렌더링 (날씨 비동기)
-    renderTodayMainPage().catch(e => console.warn('today render:', e));
+    // 활성 탭에 따라 렌더링
+    renderActiveMainTab();
   }
+}
+
+// 현재 활성화된 메인 탭을 다시 렌더
+function renderActiveMainTab() {
+  const active = document.querySelector('.main-tab.active');
+  if (!active) return;
+  const m = active.dataset.main;
+  if (m === 'today') renderTodayMainPage().catch(e => console.warn(e));
+  else if (m === 'week') renderWeekMainPage().catch(e => console.warn(e));
+  else if (m === 'month') renderMonthMainPage().catch(e => console.warn(e));
+  else if (m === 'analytics') renderDashboard();
 }
 
 function filterByPeriod(records, period) {
@@ -4555,6 +4618,97 @@ function getTodayPageDateStr() {
   return todayPageDate;
 }
 
+// ─────── 주간/월간 상태 ───────
+// 주간: 월요일 기준. 해당 주의 '월요일 YYYY-MM-DD' 저장
+let weekPageMonday = null;   // null = 이번 주
+let monthPageYm = null;      // null = 이번 달 ('YYYY-MM' 형식)
+
+// 날짜의 해당 주 월요일 반환 (월-일 기준)
+function getMondayOf(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay(); // 0=일, 1=월, ...
+  const diff = day === 0 ? -6 : 1 - day; // 월요일로 조정
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().slice(0, 10);
+}
+
+function addDays(dateStr, days) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function addMonths(ym, months) {
+  const [y, m] = ym.split('-').map(Number);
+  const d = new Date(y, m - 1 + months, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function getWeekPageMonday() {
+  if (!weekPageMonday) {
+    return getMondayOf(new Date().toISOString().slice(0, 10));
+  }
+  return weekPageMonday;
+}
+
+function getMonthPageYm() {
+  if (!monthPageYm) {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  return monthPageYm;
+}
+
+// 기간 집계 함수 (시작일~종료일 inclusive)
+function analyzePeriodRecords(startDate, endDate) {
+  const recs = allRecords.filter(r => !r.monthly && r.date >= startDate && r.date <= endDate);
+  if (recs.length === 0) return null;
+
+  const revenue = recs.reduce((s, r) => s + r.amount, 0);
+  const count = recs.filter(r => !r.manual).length || recs.length;
+  const avgTx = count > 0 ? Math.round(revenue / count) : 0;
+
+  // 영업일 수 (거래가 있는 날)
+  const daysWithSales = new Set(recs.map(r => r.date));
+  const openDays = daysWithSales.size;
+  const dailyAvg = openDays > 0 ? Math.round(revenue / openDays) : 0;
+
+  // 일자별 매출
+  const dailyRev = {};
+  recs.forEach(r => {
+    dailyRev[r.date] = (dailyRev[r.date] || 0) + r.amount;
+  });
+
+  // 요일별 매출
+  const dowRev = [0, 0, 0, 0, 0, 0, 0];
+  const dowDays = [0, 0, 0, 0, 0, 0, 0]; // 해당 요일 영업일 수
+  Object.entries(dailyRev).forEach(([date, amt]) => {
+    const dow = new Date(date + 'T12:00:00').getDay();
+    dowRev[dow] += amt;
+    dowDays[dow] += 1;
+  });
+
+  // 피크 요일
+  const peakDow = dowRev.indexOf(Math.max(...dowRev));
+  // 피크 날짜
+  let peakDay = null, peakDayAmt = 0;
+  Object.entries(dailyRev).forEach(([date, amt]) => {
+    if (amt > peakDayAmt) { peakDayAmt = amt; peakDay = date; }
+  });
+
+  // 시간대별 매출 (주간/월간용)
+  const hourRev = {};
+  recs.forEach(r => {
+    const h = r.time ? parseInt(r.time.slice(0, 2)) : -1;
+    if (h >= 0) hourRev[h] = (hourRev[h] || 0) + r.amount;
+  });
+  const peakHour = Object.keys(hourRev).length > 0
+    ? parseInt(Object.entries(hourRev).sort((a, b) => b[1] - a[1])[0][0])
+    : null;
+
+  return { revenue, count, avgTx, openDays, dailyAvg, dailyRev, dowRev, dowDays, peakDow, peakDay, peakDayAmt, hourRev, peakHour };
+}
+
 // 시간대별 비교 차트 상태
 let hourlyCompareYearsBack = null; // null이면 자동(가장 최근 과거 연도), 숫자면 명시적
 
@@ -4865,7 +5019,8 @@ async function renderTodayMainPage() {
   attachYearLineTooltip();
 }
 
-function buildYearLineSvg(chartData) {
+function buildYearLineSvg(chartData, mode) {
+  mode = mode || 'day'; // 'day' | 'week' | 'month'
   if (chartData.length === 0) return '';
 
   const W = 720, H = 260;
@@ -4972,8 +5127,17 @@ function buildYearLineSvg(chartData) {
     const yearLabelColor = isCurrent ? '#0047AB' : '#52525b';
     const yearLabelWeight = isCurrent ? '700' : '600';
     svg += `<text x="${x}" y="${H - 22}" text-anchor="middle" fill="${yearLabelColor}" font-family="Pretendard, sans-serif" font-size="11" font-weight="${yearLabelWeight}">${d.year}</text>`;
-    // X축 날짜 (MM.DD 요일)
-    const subLabel = `${d.targetDate.slice(5).replace('-', '.')} ${DOW_KO[tdow]}`;
+    // X축 서브 라벨 (mode별)
+    let subLabel;
+    if (mode === 'week') {
+      const endSlice = d.targetEnd ? d.targetEnd.slice(5).replace('-', '.') : '';
+      subLabel = `${d.targetDate.slice(5).replace('-', '.')}~${endSlice}`;
+    } else if (mode === 'month') {
+      const [, mm] = d.targetDate.split('-');
+      subLabel = `${mm}월`;
+    } else {
+      subLabel = `${d.targetDate.slice(5).replace('-', '.')} ${DOW_KO[tdow]}`;
+    }
     svg += `<text x="${x}" y="${H - 8}" text-anchor="middle" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${subLabel}</text>`;
   });
 
@@ -4982,23 +5146,29 @@ function buildYearLineSvg(chartData) {
   // 툴팁 데이터를 JSON으로 직렬화해서 attach
   const pointsData = points.map(p => ({
     x: p.x, y: p.y, rev: p.rev, hasData: p.hasData,
-    year: p.d.year, targetDate: p.d.targetDate,
+    year: p.d.year,
+    targetDate: p.d.targetDate,
+    targetEnd: p.d.targetEnd || null,
     dow: DOW_KO[new Date(p.d.targetDate + 'T12:00:00').getDay()],
     count: p.d.analysis?.count || 0,
     avgTx: p.d.analysis?.avgTx || 0,
     peakHour: p.d.analysis?.peakHour,
-    isCurrent: p.d.yearsBack === 0
+    openDays: p.d.analysis?.openDays || 0,
+    dailyAvg: p.d.analysis?.dailyAvg || 0,
+    isCurrent: p.d.yearsBack === 0,
+    mode: mode
   }));
 
   return `
-    <div class="yl-chart-wrap" data-points='${JSON.stringify(pointsData).replace(/'/g, "&apos;")}'>
+    <div class="yl-chart-wrap" data-points='${JSON.stringify(pointsData).replace(/'/g, "&apos;")}' data-mode="${mode}">
       ${svg}
       <div class="yl-tooltip" style="display:none;"></div>
     </div>`;
 }
 
-function attachYearLineTooltip() {
-  const wrap = document.querySelector('#yearBarRows .yl-chart-wrap');
+function attachYearLineTooltip(selector) {
+  selector = selector || '#yearBarRows';
+  const wrap = document.querySelector(selector + ' .yl-chart-wrap');
   if (!wrap) return;
 
   const svg = wrap.querySelector('svg.yl-chart');
@@ -5020,19 +5190,39 @@ function attachYearLineTooltip() {
     const p = points[idx];
     if (!p) return;
 
-    const dateLabel = p.targetDate.replace(/-/g, '.');
+    // mode별 날짜 라벨
+    let dateLabel;
+    if (p.mode === 'week' && p.targetEnd) {
+      dateLabel = `${p.targetDate.replace(/-/g, '.')} ~ ${p.targetEnd.slice(5).replace('-', '.')}`;
+    } else if (p.mode === 'month') {
+      const [yy, mm] = p.targetDate.split('-');
+      dateLabel = `${yy}.${mm}`;
+    } else {
+      dateLabel = `${p.targetDate.replace(/-/g, '.')} ${p.dow}`;
+    }
+
+    let metaHtml;
+    if (p.mode === 'week' || p.mode === 'month') {
+      metaHtml = `
+        <span>${p.openDays}일 영업</span>
+        <span>일평균 ${p.dailyAvg.toLocaleString()}원</span>
+      `;
+    } else {
+      metaHtml = `
+        <span>${p.count.toLocaleString()}건</span>
+        <span>건단가 ${p.avgTx.toLocaleString()}원</span>
+        ${p.peakHour != null ? `<span>피크 ${p.peakHour}시</span>` : ''}
+      `;
+    }
+
     const body = p.hasData
       ? `
-        <div class="ylt-date">${dateLabel} ${p.dow}</div>
+        <div class="ylt-date">${dateLabel}</div>
         <div class="ylt-revenue">${p.rev.toLocaleString()}<span>원</span></div>
-        <div class="ylt-meta">
-          <span>${p.count.toLocaleString()}건</span>
-          <span>건단가 ${p.avgTx.toLocaleString()}원</span>
-          ${p.peakHour != null ? `<span>피크 ${p.peakHour}시</span>` : ''}
-        </div>
+        <div class="ylt-meta">${metaHtml}</div>
       `
       : `
-        <div class="ylt-date">${dateLabel} ${p.dow}</div>
+        <div class="ylt-date">${dateLabel}</div>
         <div class="ylt-nodata">데이터 없음</div>
       `;
 
@@ -5108,6 +5298,564 @@ function attachYearLineTooltip() {
     if (!wrap.contains(e.target)) hideTooltip();
   }, { once: true });
 }
+
+// ═══════════════════════════════════════════════════════════
+// 주간 페이지 렌더링
+// ═══════════════════════════════════════════════════════════
+async function renderWeekMainPage() {
+  const mondayStr = getWeekPageMonday();
+  const sundayStr = addDays(mondayStr, 6);
+  const mondayDate = new Date(mondayStr + 'T12:00:00');
+  const currentMondayStr = getMondayOf(new Date().toISOString().slice(0, 10));
+  const isThisWeek = mondayStr === currentMondayStr;
+
+  // 헤더
+  const mondayLabel = mondayStr.replace(/-/g, '.');
+  const sundayLabel = sundayStr.slice(5).replace(/-/g, '.');
+  $('mainWeekDate').innerHTML = `<em>${mondayLabel}</em> – ${sundayLabel}`;
+
+  // 주차 계산 (해당 연도 기준)
+  const year = mondayDate.getFullYear();
+  const jan1 = new Date(year, 0, 1);
+  const daysSinceJan1 = Math.floor((mondayDate - jan1) / 86400000);
+  const weekNum = Math.ceil((daysSinceJan1 + jan1.getDay() + 1) / 7);
+  $('mainWeekDow').textContent = `${year}년 ${weekNum}주차${isThisWeek ? ' · 이번 주' : ''}`;
+
+  // 현재 주간 분석
+  const selectedAnalysis = analyzePeriodRecords(mondayStr, sundayStr);
+  const sdBlock = $('selectedWeekBlock');
+
+  if (selectedAnalysis && selectedAnalysis.revenue > 0) {
+    // 전주 비교
+    const prevMondayStr = addDays(mondayStr, -7);
+    const prevSundayStr = addDays(sundayStr, -7);
+    const prevData = analyzePeriodRecords(prevMondayStr, prevSundayStr);
+
+    // 전년 같은 주
+    const yearAgoMondayStr = getSameWeekMondayLastYear(mondayStr, 1);
+    const yearAgoSundayStr = addDays(yearAgoMondayStr, 6);
+    const yearAgoData = analyzePeriodRecords(yearAgoMondayStr, yearAgoSundayStr);
+
+    // 전전년 같은 주
+    const year2AgoMondayStr = getSameWeekMondayLastYear(mondayStr, 2);
+    const year2AgoSundayStr = addDays(year2AgoMondayStr, 6);
+    const year2AgoData = analyzePeriodRecords(year2AgoMondayStr, year2AgoSundayStr);
+
+    const renderCompare = (curr, prev, label, prevLabelStr) => {
+      if (!prev || prev.revenue === 0) {
+        return `
+          <div class="sd-compare">
+            <span class="sd-compare-label">${label}</span>
+            <span class="sd-compare-val flat">—</span>
+            <span class="sd-compare-sub">데이터 없음</span>
+          </div>`;
+      }
+      const diff = curr.revenue - prev.revenue;
+      const pct = (diff / prev.revenue * 100).toFixed(1);
+      const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      const arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '―');
+      const sign = diff > 0 ? '+' : '';
+      return `
+        <div class="sd-compare">
+          <span class="sd-compare-label">${label}</span>
+          <span class="sd-compare-val ${cls}">${arrow} ${sign}${pct}%</span>
+          <span class="sd-compare-sub">${prevLabelStr} · ${prev.revenue.toLocaleString()}원</span>
+        </div>`;
+    };
+
+    const peakDowName = DOW_KO[selectedAnalysis.peakDow];
+    const peakDayLabel = selectedAnalysis.peakDay
+      ? `${selectedAnalysis.peakDay.slice(5).replace('-', '.')} (${DOW_KO[new Date(selectedAnalysis.peakDay + 'T12:00:00').getDay()]})`
+      : null;
+
+    sdBlock.innerHTML = `
+      <div class="sd-block">
+        <div class="sd-label">${isThisWeek ? '이번 주' : '선택한 주'} 매출</div>
+        <div class="sd-revenue">${selectedAnalysis.revenue.toLocaleString()}<span class="u">원</span></div>
+        <div style="margin-top:6px; font-family:'Pretendard',sans-serif; font-size:11px; color:rgba(255,255,255,0.75);">
+          ${selectedAnalysis.openDays}일 영업 · 일평균 ${selectedAnalysis.dailyAvg.toLocaleString()}원${peakDayLabel ? ` · 피크 ${peakDayLabel}` : ''}
+        </div>
+        <div class="sd-compares">
+          ${renderCompare(selectedAnalysis, prevData, '전주 대비', prevMondayStr.slice(5).replace('-', '.') + '주')}
+          ${renderCompare(selectedAnalysis, yearAgoData, '전년 대비', yearAgoMondayStr.slice(0, 4) + '년')}
+          ${renderCompare(selectedAnalysis, year2AgoData, '전전년 대비', year2AgoMondayStr.slice(0, 4) + '년')}
+        </div>
+      </div>`;
+    sdBlock.style.display = '';
+  } else {
+    sdBlock.innerHTML = `
+      <div class="sd-empty-block">
+        <div class="sd-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
+            <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="sd-empty-title">${isThisWeek ? '이번 주 매출 데이터가 없어요' : '이 주의 데이터가 없어요'}</div>
+        <div class="sd-empty-sub">POS 엑셀을 업로드하거나 수기로 입력해 주세요</div>
+      </div>`;
+    sdBlock.style.display = '';
+  }
+
+  // 요일별 비교 차트
+  renderDowCompare(mondayStr, sundayStr, selectedAnalysis);
+
+  // 연도별 같은 주차 꺾은선
+  renderWeekYearChart(mondayStr);
+}
+
+// 동일 주차 (월요일 기준) n년 전 매칭
+function getSameWeekMondayLastYear(mondayStr, yearsBack) {
+  const d = new Date(mondayStr + 'T12:00:00');
+  d.setFullYear(d.getFullYear() - yearsBack);
+  return getMondayOf(d.toISOString().slice(0, 10));
+}
+
+// 요일별 비교 (이번 주 vs 선택 연도 같은 주)
+let weekCompareYearsBack = null;
+
+function renderDowCompare(mondayStr, sundayStr, selectedAnalysis) {
+  const block = $('dowCompareBlock');
+  if (!block) return;
+
+  if (!selectedAnalysis || selectedAnalysis.revenue === 0) {
+    block.style.display = 'none';
+    block.innerHTML = '';
+    return;
+  }
+
+  const baseYear = new Date(mondayStr + 'T12:00:00').getFullYear();
+
+  // 비교 가능한 과거 연도
+  const availableYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).filter(y => y < baseYear).sort().reverse();
+
+  if (weekCompareYearsBack === null || !availableYears.includes(baseYear - weekCompareYearsBack)) {
+    weekCompareYearsBack = availableYears.length > 0 ? baseYear - availableYears[0] : 1;
+  }
+
+  const compareYear = baseYear - weekCompareYearsBack;
+  const cmpMondayStr = getSameWeekMondayLastYear(mondayStr, weekCompareYearsBack);
+  const cmpSundayStr = addDays(cmpMondayStr, 6);
+  const cmpAnalysis = analyzePeriodRecords(cmpMondayStr, cmpSundayStr);
+
+  // 요일별 매출 (월-일 순서)
+  const reorder = (arr) => [arr[1], arr[2], arr[3], arr[4], arr[5], arr[6], arr[0]]; // 월,화,수,목,금,토,일
+  const aDow = reorder(selectedAnalysis.dowRev);
+  const bDow = cmpAnalysis ? reorder(cmpAnalysis.dowRev) : null;
+
+  const yearOptions = availableYears.length > 0
+    ? availableYears.map(y => {
+        const yb = baseYear - y;
+        return `<option value="${yb}" ${yb === weekCompareYearsBack ? 'selected' : ''}>${y}년</option>`;
+      }).join('')
+    : '<option disabled selected>-</option>';
+
+  const hasCompare = cmpAnalysis && cmpAnalysis.revenue > 0;
+  const chartSvg = buildDowCompareSvg(aDow, hasCompare ? bDow : null);
+
+  const thisLabel = `${new Date().toISOString().slice(0,10) >= mondayStr && new Date().toISOString().slice(0,10) <= sundayStr ? '이번주' : '선택주'}`;
+
+  block.innerHTML = `
+    <div class="hc-block">
+      <div class="hc-header">
+        <div class="hc-title">요일별 비교</div>
+        <div class="hc-year-select-wrap">
+          <span class="hc-year-label">vs</span>
+          <select class="hc-year-select" onchange="setWeekCompareYear(this.value)" ${availableYears.length === 0 ? 'disabled' : ''}>
+            ${yearOptions}
+          </select>
+        </div>
+      </div>
+      ${hasCompare ? `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${thisLabel} (${mondayStr.slice(5).replace('-','.')}~)</div>
+        <div class="hc-legend-item"><span class="hc-legend-dot b"></span>${compareYear}년 (${cmpMondayStr.slice(5).replace('-','.')}~)</div>
+      </div>` : `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${thisLabel}</div>
+        <div class="hc-legend-item" style="color:var(--ink-faint);">${compareYear}년 데이터 없음</div>
+      </div>`}
+      <div class="hc-chart-wrap">${chartSvg}</div>
+    </div>`;
+  block.style.display = '';
+}
+
+function setWeekCompareYear(yearsBack) {
+  weekCompareYearsBack = parseInt(yearsBack);
+  renderWeekMainPage();
+}
+
+// 요일별 비교 SVG (월-일)
+function buildDowCompareSvg(aData, bData) {
+  const labels = ['월', '화', '수', '목', '금', '토', '일'];
+  const W = 720, H = 240;
+  const PL = 52, PR = 12, PT = 18, PB = 34;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+  const n = labels.length;
+  const groupW = cw / n;
+  const hasB = bData != null;
+
+  const maxVal = Math.max(...aData, ...(hasB ? bData : [0]), 1);
+  const niceMax = (v => {
+    if (v <= 100000) return Math.ceil(v / 20000) * 20000;
+    if (v <= 500000) return Math.ceil(v / 100000) * 100000;
+    if (v <= 1000000) return Math.ceil(v / 200000) * 200000;
+    if (v <= 5000000) return Math.ceil(v / 500000) * 500000;
+    return Math.ceil(v / 1000000) * 1000000;
+  })(maxVal);
+  const yScale = v => ch - (v / niceMax) * ch;
+
+  let svg = `<svg class="hc-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = (niceMax / steps) * i;
+    const y = PT + yScale(v);
+    svg += `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#e4e4e7" stroke-width="1" stroke-dasharray="${i === 0 ? '0' : '2,2'}"/>`;
+    const label = v >= 10000 ? (v / 10000) + '만' : (v >= 1000 ? (v / 1000) + 'K' : v.toString());
+    svg += `<text x="${PL - 6}" y="${y + 3}" text-anchor="end" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${label}</text>`;
+  }
+  svg += `<text x="${PL - 44}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
+
+  if (hasB) {
+    const barW = Math.max(2, (groupW - 10) / 2 - 1);
+    labels.forEach((lbl, i) => {
+      const cx = PL + groupW * i + groupW / 2;
+      if (aData[i] > 0) {
+        const y = PT + yScale(aData[i]);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx - barW - 1}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="1.5"/>`;
+      }
+      if (bData[i] > 0) {
+        const y = PT + yScale(bData[i]);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx + 1}" y="${y}" width="${barW}" height="${barH}" fill="#c9d8f0" rx="1.5"/>`;
+      }
+      const color = (lbl === '일') ? '#ef4444' : ((lbl === '토') ? '#0047AB' : '#52525b');
+      svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="${color}" font-family="Pretendard, sans-serif" font-size="11" font-weight="600">${lbl}</text>`;
+    });
+  } else {
+    const barW = Math.max(3, groupW - 10);
+    labels.forEach((lbl, i) => {
+      const cx = PL + groupW * i + groupW / 2;
+      if (aData[i] > 0) {
+        const y = PT + yScale(aData[i]);
+        const barH = PT + ch - y;
+        svg += `<rect x="${cx - barW/2}" y="${y}" width="${barW}" height="${barH}" fill="#0047AB" rx="2"/>`;
+      }
+      const color = (lbl === '일') ? '#ef4444' : ((lbl === '토') ? '#0047AB' : '#52525b');
+      svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="${color}" font-family="Pretendard, sans-serif" font-size="11" font-weight="600">${lbl}</text>`;
+    });
+  }
+
+  svg += `</svg>`;
+  return svg;
+}
+
+// 연도별 같은 주 꺾은선 차트
+function renderWeekYearChart(mondayStr) {
+  if (allRecords.length === 0) {
+    $('weekYearRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
+    return;
+  }
+
+  const baseYear = new Date(mondayStr + 'T12:00:00').getFullYear();
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort();
+
+  const pastData = dataYears.map(y => {
+    const yearsBack = baseYear - y;
+    const targetMondayStr = yearsBack === 0 ? mondayStr : getSameWeekMondayLastYear(mondayStr, yearsBack);
+    const targetSundayStr = addDays(targetMondayStr, 6);
+    const analysis = analyzePeriodRecords(targetMondayStr, targetSundayStr);
+    return { year: y, yearsBack, targetDate: targetMondayStr, targetEnd: targetSundayStr, analysis };
+  });
+
+  $('weekYearRows').innerHTML = buildYearLineSvg(pastData, 'week')
+    || '<div style="color:var(--ink-faint);font-size:11px;">비교할 과거 데이터 없음</div>';
+  attachYearLineTooltip('#weekYearRows');
+}
+
+// ═══════════════════════════════════════════════════════════
+// 월간 페이지 렌더링
+// ═══════════════════════════════════════════════════════════
+async function renderMonthMainPage() {
+  const ym = getMonthPageYm();
+  const [y, m] = ym.split('-').map(Number);
+  const startStr = `${ym}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const endStr = `${ym}-${String(lastDay).padStart(2, '0')}`;
+  const now = new Date();
+  const currentYm = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const isThisMonth = ym === currentYm;
+
+  // 헤더
+  $('mainMonthDate').innerHTML = `<em>${y}.${String(m).padStart(2, '0')}</em>`;
+  $('mainMonthDow').textContent = `${m}월${isThisMonth ? ' · 이번 달' : ''}`;
+
+  // 현재 월 분석
+  const selectedAnalysis = analyzePeriodRecords(startStr, endStr);
+  const sdBlock = $('selectedMonthBlock');
+
+  if (selectedAnalysis && selectedAnalysis.revenue > 0) {
+    // 전월 비교
+    const prevYm = addMonths(ym, -1);
+    const [py, pm] = prevYm.split('-').map(Number);
+    const prevLastDay = new Date(py, pm, 0).getDate();
+    const prevData = analyzePeriodRecords(`${prevYm}-01`, `${prevYm}-${String(prevLastDay).padStart(2, '0')}`);
+
+    // 전년 같은 달
+    const yearAgoYm = `${y - 1}-${String(m).padStart(2, '0')}`;
+    const yearAgoLastDay = new Date(y - 1, m, 0).getDate();
+    const yearAgoData = analyzePeriodRecords(`${yearAgoYm}-01`, `${yearAgoYm}-${String(yearAgoLastDay).padStart(2, '0')}`);
+
+    // 전전년 같은 달
+    const year2AgoYm = `${y - 2}-${String(m).padStart(2, '0')}`;
+    const year2AgoLastDay = new Date(y - 2, m, 0).getDate();
+    const year2AgoData = analyzePeriodRecords(`${year2AgoYm}-01`, `${year2AgoYm}-${String(year2AgoLastDay).padStart(2, '0')}`);
+
+    const renderCompare = (curr, prev, label, prevLabelStr) => {
+      if (!prev || prev.revenue === 0) {
+        return `
+          <div class="sd-compare">
+            <span class="sd-compare-label">${label}</span>
+            <span class="sd-compare-val flat">—</span>
+            <span class="sd-compare-sub">데이터 없음</span>
+          </div>`;
+      }
+      const diff = curr.revenue - prev.revenue;
+      const pct = (diff / prev.revenue * 100).toFixed(1);
+      const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+      const arrow = diff > 0 ? '↑' : (diff < 0 ? '↓' : '―');
+      const sign = diff > 0 ? '+' : '';
+      return `
+        <div class="sd-compare">
+          <span class="sd-compare-label">${label}</span>
+          <span class="sd-compare-val ${cls}">${arrow} ${sign}${pct}%</span>
+          <span class="sd-compare-sub">${prevLabelStr} · ${prev.revenue.toLocaleString()}원</span>
+        </div>`;
+    };
+
+    const peakDayLabel = selectedAnalysis.peakDay
+      ? `${selectedAnalysis.peakDay.slice(5).replace('-', '.')} (${DOW_KO[new Date(selectedAnalysis.peakDay + 'T12:00:00').getDay()]})`
+      : null;
+
+    sdBlock.innerHTML = `
+      <div class="sd-block">
+        <div class="sd-label">${isThisMonth ? '이번 달' : '선택한 달'} 매출</div>
+        <div class="sd-revenue">${selectedAnalysis.revenue.toLocaleString()}<span class="u">원</span></div>
+        <div style="margin-top:6px; font-family:'Pretendard',sans-serif; font-size:11px; color:rgba(255,255,255,0.75);">
+          ${selectedAnalysis.openDays}일 영업 · 일평균 ${selectedAnalysis.dailyAvg.toLocaleString()}원${peakDayLabel ? ` · 피크 ${peakDayLabel}` : ''}
+        </div>
+        <div class="sd-compares">
+          ${renderCompare(selectedAnalysis, prevData, '전월 대비', prevYm.replace('-', '.'))}
+          ${renderCompare(selectedAnalysis, yearAgoData, '전년 대비', yearAgoYm.replace('-', '.'))}
+          ${renderCompare(selectedAnalysis, year2AgoData, '전전년 대비', year2AgoYm.replace('-', '.'))}
+        </div>
+      </div>`;
+    sdBlock.style.display = '';
+  } else {
+    sdBlock.innerHTML = `
+      <div class="sd-empty-block">
+        <div class="sd-empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="4" width="18" height="18" rx="2" stroke-linecap="round"/>
+            <path d="M8 2v4M16 2v4M3 10h18" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="sd-empty-title">${isThisMonth ? '이번 달 매출 데이터가 없어요' : '이 달의 데이터가 없어요'}</div>
+        <div class="sd-empty-sub">POS 엑셀을 업로드하거나 수기로 입력해 주세요</div>
+      </div>`;
+    sdBlock.style.display = '';
+  }
+
+  // 일자별 차트 (이번달 vs 선택 연도 같은 달)
+  renderDailyCompare(ym, selectedAnalysis);
+
+  // 연도별 같은 달 꺾은선
+  renderMonthYearChart(ym);
+}
+
+// 일자별 비교 (이번달 vs 선택 연도 같은달)
+let monthCompareYearsBack = null;
+
+function renderDailyCompare(ym, selectedAnalysis) {
+  const block = $('dailyCompareBlock');
+  if (!block) return;
+
+  if (!selectedAnalysis || selectedAnalysis.revenue === 0) {
+    block.style.display = 'none';
+    block.innerHTML = '';
+    return;
+  }
+
+  const [y, m] = ym.split('-').map(Number);
+  const availableYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).filter(yr => yr < y).sort().reverse();
+
+  if (monthCompareYearsBack === null || !availableYears.includes(y - monthCompareYearsBack)) {
+    monthCompareYearsBack = availableYears.length > 0 ? y - availableYears[0] : 1;
+  }
+
+  const compareYear = y - monthCompareYearsBack;
+  const cmpYm = `${compareYear}-${String(m).padStart(2, '0')}`;
+  const cmpLastDay = new Date(compareYear, m, 0).getDate();
+  const cmpAnalysis = analyzePeriodRecords(`${cmpYm}-01`, `${cmpYm}-${String(cmpLastDay).padStart(2, '0')}`);
+
+  const daysInMonth = Math.max(
+    new Date(y, m, 0).getDate(),
+    cmpAnalysis ? cmpLastDay : 0
+  );
+
+  const aData = [];
+  const bData = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const aKey = `${ym}-${String(d).padStart(2, '0')}`;
+    const bKey = `${cmpYm}-${String(d).padStart(2, '0')}`;
+    aData.push(selectedAnalysis.dailyRev[aKey] || 0);
+    bData.push(cmpAnalysis ? (cmpAnalysis.dailyRev[bKey] || 0) : 0);
+  }
+
+  const yearOptions = availableYears.length > 0
+    ? availableYears.map(yr => {
+        const yb = y - yr;
+        return `<option value="${yb}" ${yb === monthCompareYearsBack ? 'selected' : ''}>${yr}년</option>`;
+      }).join('')
+    : '<option disabled selected>-</option>';
+
+  const hasCompare = cmpAnalysis && cmpAnalysis.revenue > 0;
+  const chartSvg = buildDailyCompareSvg(daysInMonth, aData, hasCompare ? bData : null);
+  const thisLabel = (new Date().getFullYear() === y && new Date().getMonth() + 1 === m) ? '이번달' : '선택달';
+
+  block.innerHTML = `
+    <div class="hc-block">
+      <div class="hc-header">
+        <div class="hc-title">일자별 비교</div>
+        <div class="hc-year-select-wrap">
+          <span class="hc-year-label">vs</span>
+          <select class="hc-year-select" onchange="setMonthCompareYear(this.value)" ${availableYears.length === 0 ? 'disabled' : ''}>
+            ${yearOptions}
+          </select>
+        </div>
+      </div>
+      ${hasCompare ? `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${thisLabel} (${ym.replace('-','.')})</div>
+        <div class="hc-legend-item"><span class="hc-legend-dot b"></span>${compareYear}년 ${m}월</div>
+      </div>` : `
+      <div class="hc-legend">
+        <div class="hc-legend-item"><span class="hc-legend-dot a"></span>${thisLabel}</div>
+        <div class="hc-legend-item" style="color:var(--ink-faint);">${compareYear}년 데이터 없음</div>
+      </div>`}
+      <div class="hc-chart-wrap">${chartSvg}</div>
+    </div>`;
+  block.style.display = '';
+}
+
+function setMonthCompareYear(yearsBack) {
+  monthCompareYearsBack = parseInt(yearsBack);
+  renderMonthMainPage();
+}
+
+// 일자별 비교 SVG
+function buildDailyCompareSvg(daysInMonth, aData, bData) {
+  const W = 720, H = 240;
+  const PL = 52, PR = 12, PT = 18, PB = 34;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+  const n = daysInMonth;
+  const groupW = cw / n;
+  const hasB = bData != null;
+
+  const maxVal = Math.max(...aData, ...(hasB ? bData : [0]), 1);
+  const niceMax = (v => {
+    if (v <= 100000) return Math.ceil(v / 20000) * 20000;
+    if (v <= 500000) return Math.ceil(v / 100000) * 100000;
+    if (v <= 1000000) return Math.ceil(v / 200000) * 200000;
+    if (v <= 5000000) return Math.ceil(v / 500000) * 500000;
+    return Math.ceil(v / 1000000) * 1000000;
+  })(maxVal);
+  const yScale = v => ch - (v / niceMax) * ch;
+
+  let svg = `<svg class="hc-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = (niceMax / steps) * i;
+    const yy = PT + yScale(v);
+    svg += `<line x1="${PL}" y1="${yy}" x2="${W - PR}" y2="${yy}" stroke="#e4e4e7" stroke-width="1" stroke-dasharray="${i === 0 ? '0' : '2,2'}"/>`;
+    const label = v >= 10000 ? (v / 10000) + '만' : (v >= 1000 ? (v / 1000) + 'K' : v.toString());
+    svg += `<text x="${PL - 6}" y="${yy + 3}" text-anchor="end" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${label}</text>`;
+  }
+  svg += `<text x="${PL - 44}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
+
+  if (hasB) {
+    const barW = Math.max(1, (groupW - 2) / 2);
+    for (let i = 0; i < n; i++) {
+      const cx = PL + groupW * i + groupW / 2;
+      if (aData[i] > 0) {
+        const yy = PT + yScale(aData[i]);
+        const barH = PT + ch - yy;
+        svg += `<rect x="${cx - barW - 0.5}" y="${yy}" width="${barW}" height="${barH}" fill="#0047AB"/>`;
+      }
+      if (bData[i] > 0) {
+        const yy = PT + yScale(bData[i]);
+        const barH = PT + ch - yy;
+        svg += `<rect x="${cx + 0.5}" y="${yy}" width="${barW}" height="${barH}" fill="#c9d8f0"/>`;
+      }
+    }
+  } else {
+    const barW = Math.max(2, groupW - 2);
+    for (let i = 0; i < n; i++) {
+      const cx = PL + groupW * i + groupW / 2;
+      if (aData[i] > 0) {
+        const yy = PT + yScale(aData[i]);
+        const barH = PT + ch - yy;
+        svg += `<rect x="${cx - barW/2}" y="${yy}" width="${barW}" height="${barH}" fill="#0047AB" rx="1"/>`;
+      }
+    }
+  }
+
+  // X축 날짜 라벨 (5일 간격)
+  for (let i = 0; i < n; i += 5) {
+    const cx = PL + groupW * i + groupW / 2;
+    const dayNum = i + 1;
+    svg += `<text x="${cx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="500">${dayNum}일</text>`;
+  }
+  // 마지막 날짜
+  const lastCx = PL + groupW * (n - 1) + groupW / 2;
+  svg += `<text x="${lastCx}" y="${H - 14}" text-anchor="middle" fill="#52525b" font-family="Pretendard, sans-serif" font-size="10" font-weight="500">${n}일</text>`;
+
+  svg += `</svg>`;
+  return svg;
+}
+
+// 연도별 같은 달 꺾은선 차트
+function renderMonthYearChart(ym) {
+  if (allRecords.length === 0) {
+    $('monthYearRows').innerHTML = '<div style="color:var(--ink-faint);font-size:11px;">데이터 없음</div>';
+    return;
+  }
+
+  const [y, m] = ym.split('-').map(Number);
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))].map(Number).sort();
+
+  const pastData = dataYears.map(yr => {
+    const yearsBack = y - yr;
+    const targetYm = `${yr}-${String(m).padStart(2, '0')}`;
+    const lastDay = new Date(yr, m, 0).getDate();
+    const targetStart = `${targetYm}-01`;
+    const targetEnd = `${targetYm}-${String(lastDay).padStart(2, '0')}`;
+    const analysis = analyzePeriodRecords(targetStart, targetEnd);
+    return { year: yr, yearsBack, targetDate: targetStart, targetEnd, analysis };
+  });
+
+  $('monthYearRows').innerHTML = buildYearLineSvg(pastData, 'month')
+    || '<div style="color:var(--ink-faint);font-size:11px;">비교할 과거 데이터 없음</div>';
+  attachYearLineTooltip('#monthYearRows');
+}
+
 async function openTodayModal() {
   openModal('todayModal');
 
@@ -5246,9 +5994,37 @@ function setupEvents() {
       document.querySelectorAll('.main-panel').forEach(p => p.classList.remove('active'));
       tab.classList.add('active');
       $('main-' + tab.dataset.main).classList.add('active');
-      // 분석 탭 활성화 시 대시보드 렌더
-      if (tab.dataset.main === 'analytics') renderDashboard();
+
+      const m = tab.dataset.main;
+      if (m === 'analytics') renderDashboard();
+      else if (m === 'week') renderWeekMainPage().catch(e => console.warn('week render:', e));
+      else if (m === 'month') renderMonthMainPage().catch(e => console.warn('month render:', e));
+      else if (m === 'today') renderTodayMainPage().catch(e => console.warn('today render:', e));
     });
+  });
+
+  // 주간 네비게이션
+  const weekPrev = $('weekNavPrev');
+  const weekNext = $('weekNavNext');
+  if (weekPrev) weekPrev.addEventListener('click', () => {
+    weekPageMonday = addDays(getWeekPageMonday(), -7);
+    renderWeekMainPage().catch(e => console.warn(e));
+  });
+  if (weekNext) weekNext.addEventListener('click', () => {
+    weekPageMonday = addDays(getWeekPageMonday(), 7);
+    renderWeekMainPage().catch(e => console.warn(e));
+  });
+
+  // 월간 네비게이션
+  const monthPrev = $('monthNavPrev');
+  const monthNext = $('monthNavNext');
+  if (monthPrev) monthPrev.addEventListener('click', () => {
+    monthPageYm = addMonths(getMonthPageYm(), -1);
+    renderMonthMainPage().catch(e => console.warn(e));
+  });
+  if (monthNext) monthNext.addEventListener('click', () => {
+    monthPageYm = addMonths(getMonthPageYm(), 1);
+    renderMonthMainPage().catch(e => console.warn(e));
   });
 
   $('btnData').addEventListener('click', async () => {
