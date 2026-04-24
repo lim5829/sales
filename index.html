@@ -5261,8 +5261,10 @@ function moveCal(direction) {
 }
 
 function setupCalendarEvents() {
-  $('calPrev').addEventListener('click', () => moveCal(-1));
-  $('calNext').addEventListener('click', () => moveCal(1));
+  const prev = $('calPrev');
+  const next = $('calNext');
+  if (prev) prev.addEventListener('click', () => moveCal(-1));
+  if (next) next.addEventListener('click', () => moveCal(1));
 }
 
 function renderYearly() {
