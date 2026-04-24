@@ -1288,6 +1288,18 @@
     font-weight: 500;
   }
   .year-bar-label.current .ybl-dow { color: var(--accent); opacity: 0.75; }
+
+  /* 꺾은선 차트 wrap */
+  .yl-chart-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+  .yl-chart {
+    width: 100%;
+    min-width: 320px;
+    height: auto;
+    display: block;
+  }
   .year-bar-track {
     flex: 1;
     height: 8px;
@@ -4763,27 +4775,122 @@ async function renderTodayMainPage() {
     return { year: y, yearsBack, targetDate, analysis };
   });
 
-  // ─── 연도별 바 차트 (매출 기준) ───
-  const maxRev = Math.max(...pastData.map(d => d.analysis?.revenue || 0), 1);
-  $('yearBarRows').innerHTML = pastData.map(d => {
+  // ─── 연도별 꺾은선 차트 (매출 기준) ───
+  // 시간 순서대로 오래된 연도 → 최근 연도
+  const chartData = [...pastData].sort((a, b) => a.year - b.year);
+  $('yearBarRows').innerHTML = buildYearLineSvg(chartData)
+    || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
+}
+
+function buildYearLineSvg(chartData) {
+  if (chartData.length === 0) return '';
+
+  const W = 720, H = 260;
+  const PL = 56, PR = 20, PT = 18, PB = 44;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+
+  const n = chartData.length;
+  const stepX = n > 1 ? cw / (n - 1) : 0;
+  const revenues = chartData.map(d => d.analysis?.revenue || 0);
+  const maxRev = Math.max(...revenues, 1);
+
+  // y축 적절한 최대값
+  const niceMax = (v => {
+    if (v <= 100000) return Math.ceil(v / 20000) * 20000;
+    if (v <= 500000) return Math.ceil(v / 100000) * 100000;
+    if (v <= 1000000) return Math.ceil(v / 200000) * 200000;
+    if (v <= 5000000) return Math.ceil(v / 500000) * 500000;
+    return Math.ceil(v / 1000000) * 1000000;
+  })(maxRev);
+
+  const xPos = i => PL + stepX * i;
+  const yPos = v => PT + ch - (v / niceMax) * ch;
+
+  let svg = `<svg class="yl-chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">`;
+
+  // Y축 그리드 (4단계)
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const v = (niceMax / steps) * i;
+    const y = yPos(v);
+    svg += `<line x1="${PL}" y1="${y}" x2="${W - PR}" y2="${y}" stroke="#e4e4e7" stroke-width="1" stroke-dasharray="${i === 0 ? '0' : '2,2'}"/>`;
+    const label = v >= 10000 ? (v / 10000) + '만' : (v >= 1000 ? (v / 1000) + 'K' : v.toString());
+    svg += `<text x="${PL - 8}" y="${y + 3}" text-anchor="end" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${label}</text>`;
+  }
+  svg += `<text x="${PL - 48}" y="${PT + 4}" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">(원)</text>`;
+
+  // 데이터가 있는 포인트만 연결 (gap 처리)
+  const validPts = chartData.map((d, i) => ({ i, rev: d.analysis?.revenue || 0, d })).filter(p => p.rev > 0);
+
+  // 선 그리기 (연속된 포인트만 연결)
+  if (validPts.length >= 2) {
+    // 연속된 구간들로 나누기
+    const segments = [];
+    let seg = [];
+    for (let i = 0; i < chartData.length; i++) {
+      const rev = chartData[i].analysis?.revenue || 0;
+      if (rev > 0) {
+        seg.push({ i, rev });
+      } else {
+        if (seg.length >= 2) segments.push(seg);
+        seg = [];
+      }
+    }
+    if (seg.length >= 2) segments.push(seg);
+
+    segments.forEach(segPts => {
+      const path = segPts.map((p, j) => {
+        const x = xPos(p.i);
+        const y = yPos(p.rev);
+        return `${j === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ');
+      // 면 채우기 (그라데이션 느낌)
+      const first = segPts[0], last = segPts[segPts.length - 1];
+      const areaPath = path + ` L${xPos(last.i).toFixed(1)},${PT + ch} L${xPos(first.i).toFixed(1)},${PT + ch} Z`;
+      svg += `<path d="${areaPath}" fill="rgba(0, 71, 171, 0.08)" stroke="none"/>`;
+      svg += `<path d="${path}" fill="none" stroke="#0047AB" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+    });
+  }
+
+  // 포인트 & X축 라벨
+  chartData.forEach((d, i) => {
+    const x = xPos(i);
     const rev = d.analysis?.revenue || 0;
-    const pct = Math.max(rev / maxRev * 100, rev > 0 ? 2 : 0).toFixed(1);
-    const valText = rev > 0 ? rev.toLocaleString() + '원' : '—';
-    const tdow = new Date(d.targetDate + 'T12:00:00').getDay();
     const isCurrent = d.yearsBack === 0;
-    const dateLabel = d.targetDate.replace(/-/g, '.');
-    return `
-      <div class="year-bar-row" title="${d.targetDate} (${DOW_KO[tdow]})">
-        <div class="year-bar-label ${isCurrent ? 'current' : ''}">
-          <span class="ybl-date">${dateLabel}</span>
-          <span class="ybl-dow">${DOW_KO[tdow]}</span>
-        </div>
-        <div class="year-bar-track">
-          <div class="year-bar-fill ${isCurrent ? 'current' : ''} ${rev > 0 ? '' : 'no-data'}" style="width:${pct}%"></div>
-        </div>
-        <div class="year-bar-val ${isCurrent ? 'current' : ''}">${valText}</div>
-      </div>`;
-  }).join('') || '<div style="color:var(--ink-faint);font-size:11px;font-family:\'JetBrains Mono\',monospace;">비교할 과거 데이터 없음</div>';
+    const tdow = new Date(d.targetDate + 'T12:00:00').getDay();
+
+    if (rev > 0) {
+      const y = yPos(rev);
+      // 포인트
+      if (isCurrent) {
+        // 현재 연도: 큰 원 + 금액 라벨
+        svg += `<circle cx="${x}" cy="${y}" r="7" fill="#fff" stroke="#0047AB" stroke-width="2.5"/>`;
+        svg += `<circle cx="${x}" cy="${y}" r="3" fill="#0047AB"/>`;
+        // 금액 라벨 (위쪽)
+        const labelY = y - 12;
+        const revK = rev >= 10000 ? Math.round(rev / 1000) + 'K' : rev.toLocaleString();
+        svg += `<rect x="${x - 28}" y="${labelY - 10}" width="56" height="16" rx="8" fill="#0047AB"/>`;
+        svg += `<text x="${x}" y="${labelY + 1}" text-anchor="middle" fill="#fff" font-family="Pretendard, sans-serif" font-size="10" font-weight="700">${revK}원</text>`;
+      } else {
+        svg += `<circle cx="${x}" cy="${y}" r="4.5" fill="#fff" stroke="#0047AB" stroke-width="2"/>`;
+      }
+    } else {
+      // 데이터 없는 포인트: 회색 점
+      svg += `<circle cx="${x}" cy="${PT + ch - 1}" r="3" fill="#d4d4d8"/>`;
+    }
+
+    // X축 라벨 (연도)
+    const yearLabelColor = isCurrent ? '#0047AB' : '#52525b';
+    const yearLabelWeight = isCurrent ? '700' : '600';
+    svg += `<text x="${x}" y="${H - 22}" text-anchor="middle" fill="${yearLabelColor}" font-family="Pretendard, sans-serif" font-size="11" font-weight="${yearLabelWeight}">${d.year}</text>`;
+    // X축 날짜 (MM.DD 요일)
+    const subLabel = `${d.targetDate.slice(5).replace('-', '.')} ${DOW_KO[tdow]}`;
+    svg += `<text x="${x}" y="${H - 8}" text-anchor="middle" fill="#a1a1aa" font-family="JetBrains Mono, monospace" font-size="9">${subLabel}</text>`;
+  });
+
+  svg += `</svg>`;
+  return `<div class="yl-chart-wrap">${svg}</div>`;
 }
 async function openTodayModal() {
   openModal('todayModal');
