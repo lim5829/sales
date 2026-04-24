@@ -1445,7 +1445,16 @@
     outline-offset: 1px;
     z-index: 2;
   }
-  /* 셀 색상 (평균 대비 변화율) */
+  /* 셀 색상 (z-score 7단계) */
+  .hm-cell.z-neg3 { background: #b91c1c; color: #fff; }
+  .hm-cell.z-neg2 { background: #ef4444; color: #fff; }
+  .hm-cell.z-neg1 { background: #fca5a5; color: #7f1d1d; }
+  .hm-cell.z-0   { background: #e4e4e7; color: #52525b; }
+  .hm-cell.z-pos1 { background: #93c5fd; color: #1e3a8a; }
+  .hm-cell.z-pos2 { background: #3b82f6; color: #fff; }
+  .hm-cell.z-pos3 { background: #1d4ed8; color: #fff; }
+
+  /* 구 레거시 클래스 (다른 곳에서 참조 가능) */
   .hm-cell.lv-neg2 { background: #b91c1c; color: #fff; }
   .hm-cell.lv-neg1 { background: #fca5a5; color: #7f1d1d; }
   .hm-cell.lv-0   { background: #e4e4e7; color: #52525b; }
@@ -1480,10 +1489,30 @@
     line-height: 1;
     font-weight: 900;
   }
-  .hm-cell-marker.drop { color: #7f1d1d; }
-  .hm-cell.lv-neg2 .hm-cell-marker.drop { color: #fff; }
   .hm-cell-marker.overload { color: #78350f; }
+  .hm-cell-marker.underperform { color: #7f1d1d; }
+  .hm-cell-marker.drop { color: #7f1d1d; }
   .hm-cell-marker.dead { color: var(--ink-faint); }
+  .hm-cell.z-neg2 .hm-cell-marker.underperform,
+  .hm-cell.z-neg3 .hm-cell-marker.underperform { color: #fff; }
+
+  /* 효율 배지 (좌하단) */
+  .hm-cell-eff {
+    position: absolute;
+    bottom: 1px;
+    left: 2px;
+    font-size: 8px;
+    line-height: 1;
+    font-weight: 900;
+  }
+  .hm-cell-eff.fake { color: #b91c1c; }
+  .hm-cell.z-pos2 .hm-cell-eff.fake, .hm-cell.z-pos3 .hm-cell-eff.fake { color: #fecaca; }
+  .hm-cell-eff.high { color: #047857; }
+  .hm-cell.z-neg2 .hm-cell-eff.high, .hm-cell.z-neg3 .hm-cell-eff.high { color: #bbf7d0; }
+
+  /* 그룹별 요일 라벨 강조 */
+  .hm-cell-label.group-friday { color: #c2410c; font-weight: 700; }
+  .hm-cell-label.group-weekend { font-weight: 700; }
 
   /* 범례 */
   .hm-legend {
@@ -1699,6 +1728,233 @@
     color: var(--ink-faint);
     font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
+  }
+
+  /* 이상구간 섹션 */
+  .hm-anom-section {
+    margin-bottom: 12px;
+  }
+  .hm-anom-section:last-child { margin-bottom: 0; }
+  .hm-anom-section-title {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .hm-anom-section-title .hm-anomaly-count {
+    margin-left: auto;
+  }
+
+  /* 상세 - 상태/효율 칩 */
+  .hm-detail-status-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  .hm-status-chip, .hm-eff-chip {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 99px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: -0.01em;
+  }
+  .hm-status-chip.status-overload { background: var(--warn-soft); color: #b45309; }
+  .hm-status-chip.status-underperform { background: var(--danger-soft); color: #b91c1c; }
+  .hm-status-chip.status-normal { background: var(--bg-muted); color: var(--ink-dim); }
+  .hm-status-chip.status-unknown { background: var(--bg-muted); color: var(--ink-faint); }
+
+  .hm-eff-chip.eff-real { background: rgba(29, 78, 216, 0.1); color: #1d4ed8; }
+  .hm-eff-chip.eff-fake { background: rgba(234, 88, 12, 0.12); color: #c2410c; }
+  .hm-eff-chip.eff-high { background: var(--success-soft); color: #047857; }
+  .hm-eff-chip.eff-collapse { background: rgba(185, 28, 28, 0.12); color: #b91c1c; }
+  .hm-eff-chip.eff-neutral { background: var(--bg-muted); color: var(--ink-dim); }
+
+  .hm-detail-group-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-dim);
+    letter-spacing: 0.02em;
+    padding: 8px 10px;
+    background: var(--bg-soft);
+    border-radius: var(--r-sm);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+  .hm-detail-group-info strong { color: var(--ink); font-weight: 700; }
+
+  /* 상세 - 지표 테이블 */
+  .hm-metric-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  .hm-metric-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    font-weight: 600;
+    text-align: right;
+    padding: 6px 4px;
+    border-bottom: 1px solid var(--line);
+  }
+  .hm-metric-table th:first-child { text-align: left; }
+  .hm-metric-table td {
+    padding: 9px 4px;
+    text-align: right;
+    border-bottom: 1px solid var(--line);
+    font-variant-numeric: tabular-nums;
+  }
+  .hm-metric-table tr:last-child td { border-bottom: none; }
+  .hm-mt-label {
+    text-align: left !important;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .hm-mt-val {
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .hm-mt-base {
+    color: var(--ink-faint);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+  .hm-mt-delta {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .hm-mt-delta.up { color: #047857; }
+  .hm-mt-delta.down { color: #b91c1c; }
+  .hm-mt-delta.flat { color: var(--ink-faint); }
+  .hm-mt-z {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink-dim);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* 인사이트 패널 */
+  .hm-insights {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .hm-insights-title {
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin-bottom: 12px;
+    color: var(--ink);
+  }
+  .hm-insights-section {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .hm-insights-section:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .hm-insights-section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .hm-insights-row {
+    display: grid;
+    grid-template-columns: 60px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 12px;
+  }
+  .hm-insights-group {
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    padding: 3px 8px;
+    border-radius: var(--r-sm);
+  }
+  .hm-insights-group.group-weekday { background: var(--bg-muted); color: var(--ink); }
+  .hm-insights-group.group-friday { background: rgba(234, 88, 12, 0.12); color: #c2410c; }
+  .hm-insights-group.group-weekend { background: var(--accent-tint); color: var(--accent); }
+  .hm-insights-desc {
+    color: var(--ink);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .hm-insights-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  .hm-insights-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .hm-insights-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+  .hm-insights-tag.structural { background: var(--danger-soft); color: #b91c1c; }
+  .hm-insights-tag.temporary { background: var(--warn-soft); color: #b45309; }
+
+  .hm-action-row {
+    display: grid;
+    grid-template-columns: 66px 1fr;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--line);
+  }
+  .hm-action-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .hm-action-cat {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-tint);
+    padding: 4px 6px;
+    border-radius: var(--r-sm);
+    text-align: center;
+    align-self: start;
+  }
+  .hm-action-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+    margin-bottom: 3px;
+  }
+  .hm-action-detail {
+    font-size: 11px;
+    color: var(--ink-dim);
+    line-height: 1.5;
+    font-weight: 500;
   }
 
   /* 요약 - 연간 누적 매출 카드 */
@@ -3664,14 +3920,6 @@
             </div>
           </div>
           <div class="hm-control-row">
-            <div class="hm-control-label">비교</div>
-            <div class="hm-segment" id="hmCompare">
-              <button class="hm-seg-btn active" data-compare="none">없음</button>
-              <button class="hm-seg-btn" data-compare="prev">전주</button>
-              <button class="hm-seg-btn" data-compare="year">전년</button>
-            </div>
-          </div>
-          <div class="hm-control-row">
             <div class="hm-control-label">기간</div>
             <div class="hm-segment" id="hmPeriod">
               <button class="hm-seg-btn" data-period="4">4주</button>
@@ -3683,9 +3931,6 @@
           <div class="hm-period-range" id="hmPeriodRange">—</div>
         </div>
 
-        <!-- 이상 감지 패널 -->
-        <div class="hm-anomalies" id="hmAnomalies" style="display:none"></div>
-
         <!-- 히트맵 -->
         <div class="hm-wrap">
           <div class="hm-scroll" id="hmScroll">
@@ -3696,6 +3941,12 @@
 
         <!-- 선택된 셀 상세 -->
         <div class="hm-detail" id="hmDetail"></div>
+
+        <!-- 이상 구간 TOP -->
+        <div class="hm-anomalies" id="hmAnomalies" style="display:none"></div>
+
+        <!-- 인사이트 + 실행 액션 -->
+        <div class="hm-insights" id="hmInsights" style="display:none"></div>
       </div>
     </div> <!-- /top-analytics -->
   </div> <!-- /dashboard -->
@@ -7361,20 +7612,26 @@ function renderYearYearChart(year) {
 }
 
 // ═══════════════════════════════════════════════════════════
-// 분석 - 요일×시간 히트맵
+// 분석 - 요일×시간 히트맵 (관광지 특성 반영: 평일/금/주말 3그룹)
 // ═══════════════════════════════════════════════════════════
 
-// 상태
 const heatmapState = {
   metric: 'revenue',       // 'revenue' | 'orderCount' | 'avgTx'
-  compare: 'none',         // 'none' | 'prev' | 'year'
   period: '8',             // '4' | '8' | '12' | 'ytd'
   selectedCell: null,      // { dow, hour }
 };
 
 const DOW_SHORT = ['일', '월', '화', '수', '목', '금', '토'];
+// 요일 그룹 매핑: 0=일→weekend, 1-4=월~목→weekday, 5=금→friday, 6=토→weekend
+function dowGroup(dow) {
+  if (dow === 5) return 'friday';
+  if (dow === 0 || dow === 6) return 'weekend';
+  return 'weekday';
+}
+const GROUPS = ['weekday', 'friday', 'weekend'];
+const GROUP_LABEL = { weekday: '평일', friday: '금요일', weekend: '주말' };
 
-// 기간 계산 (오늘 기준 역산)
+// 기간 계산
 function getHeatmapPeriod() {
   const now = new Date();
   const todayStr = now.toISOString().slice(0, 10);
@@ -7390,182 +7647,243 @@ function getHeatmapPeriod() {
   return { startStr, endStr: todayStr };
 }
 
-// 비교 기간 계산
-function getHeatmapComparePeriod(startStr, endStr) {
-  if (heatmapState.compare === 'prev') {
-    // 동일 길이만큼 앞선 기간
-    const start = new Date(startStr + 'T12:00:00');
-    const end = new Date(endStr + 'T12:00:00');
-    const days = Math.round((end - start) / 86400000);
-    const prevEnd = new Date(start);
-    prevEnd.setDate(prevEnd.getDate() - 1);
-    const prevStart = new Date(prevEnd);
-    prevStart.setDate(prevStart.getDate() - days);
-    return { startStr: prevStart.toISOString().slice(0, 10), endStr: prevEnd.toISOString().slice(0, 10) };
-  }
-  if (heatmapState.compare === 'year') {
-    // 작년 동일 기간
-    const start = new Date(startStr + 'T12:00:00');
-    const end = new Date(endStr + 'T12:00:00');
-    start.setFullYear(start.getFullYear() - 1);
-    end.setFullYear(end.getFullYear() - 1);
-    return { startStr: start.toISOString().slice(0, 10), endStr: end.toISOString().slice(0, 10) };
-  }
-  return null;
-}
-
-// 요일×시간 집계: cells[dow][hour] = { revenue, orderCount, avgTx, sampleCount, zeroWeeks }
-function aggregateHeatmap(startStr, endStr) {
-  // 초기화
-  const cells = [];
+// ─── 집계: 일자별 시간별 집계 후 그룹별 기준(평균·표준편차) 생성 ───
+function buildHeatmapDataset(startStr, endStr) {
+  // 원본 일일 샘플: samples[dow][hour] = [{ date, sales, orders }...]
+  const samples = [];
   for (let d = 0; d < 7; d++) {
-    cells.push(new Array(24).fill(null).map(() => ({
-      revenue: 0, orderCount: 0, sampleCount: 0, zeroWeeks: 0,
-    })));
+    samples.push(new Array(24).fill(null).map(() => []));
   }
 
-  // 대상 레코드 필터 (시간 정보 있는 것만, 월정액은 제외)
+  // 대상 레코드
   const recs = allRecords.filter(r =>
-    !r.monthly &&
-    r.date >= startStr &&
-    r.date <= endStr &&
-    r.time
+    !r.monthly && r.date >= startStr && r.date <= endStr && r.time
   );
 
-  // 날짜별 집계 (후처리용)
-  const byDateHour = {}; // byDateHour[date][hour] = { rev, cnt }
+  // date × hour 집계
+  const byDateHour = {};
   recs.forEach(r => {
-    const hour = parseInt(r.time.slice(0, 2));
-    if (isNaN(hour)) return;
+    const h = parseInt(r.time.slice(0, 2));
+    if (isNaN(h)) return;
     if (!byDateHour[r.date]) byDateHour[r.date] = {};
-    if (!byDateHour[r.date][hour]) byDateHour[r.date][hour] = { rev: 0, cnt: 0 };
-    byDateHour[r.date][hour].rev += r.amount;
-    byDateHour[r.date][hour].cnt += r.manual ? 0 : 1;
+    if (!byDateHour[r.date][h]) byDateHour[r.date][h] = { sales: 0, orders: 0 };
+    byDateHour[r.date][h].sales += r.amount;
+    byDateHour[r.date][h].orders += r.manual ? 0 : 1;
   });
 
-  // 날짜 순회하며 (dow, hour) 셀에 합산 + sampleCount(해당 요일이 나타난 주 수) 계산
-  // sampleCount: "해당 요일·시간대가 몇 번 있었나" = 해당 요일이 기간 내 몇 번 등장했나
-  const dowAppearances = [0, 0, 0, 0, 0, 0, 0]; // 각 요일이 기간에 몇 번 등장했는지
-  const dateSet = new Set();
-  // 기간의 모든 날짜 열거
+  // 기간 내 모든 날짜 열거 → 각 날짜·시간을 샘플로 기록 (매출 0이어도 기록)
   const start = new Date(startStr + 'T12:00:00');
   const end = new Date(endStr + 'T12:00:00');
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const dateStr = d.toISOString().slice(0, 10);
-    dateSet.add(dateStr);
-    dowAppearances[d.getDay()]++;
+    const dow = d.getDay();
+    const hoursObj = byDateHour[dateStr] || {};
+    for (let h = 0; h < 24; h++) {
+      const hd = hoursObj[h];
+      // 영업 외 시간대는 기록 안 함 → 영업시간 감지에 noise 줄임
+      if (hd) {
+        samples[dow][h].push({ date: dateStr, sales: hd.sales, orders: hd.orders });
+      }
+    }
   }
 
-  // 각 날짜 × 시간대에 대해 cells 반영
-  dateSet.forEach(dateStr => {
-    const dow = new Date(dateStr + 'T12:00:00').getDay();
-    const hours = byDateHour[dateStr] || {};
+  // 현재 값(기간 전체의 합/최근 N주 평균): 의사결정용 "현재 상태"
+  // → 기간 내 요일×시간의 **평균**을 '현재 값'으로 사용 (가장 최근 상태 근사)
+  // → 그리고 그 현재값을 같은 그룹·같은 시간 평균(=샘플 평균)과 비교
+  // 즉 cells[d][h] = { currentSales, currentOrders, sampleCount }
+  const cells = [];
+  for (let d = 0; d < 7; d++) {
+    cells.push(new Array(24).fill(null).map(() => ({
+      sales: 0, orders: 0, sampleCount: 0, zeroSamples: 0
+    })));
+  }
+  for (let d = 0; d < 7; d++) {
     for (let h = 0; h < 24; h++) {
-      const hourData = hours[h];
-      if (hourData) {
-        cells[dow][h].revenue += hourData.rev;
-        cells[dow][h].orderCount += hourData.cnt;
+      const arr = samples[d][h];
+      cells[d][h].sampleCount = arr.length;
+      if (arr.length === 0) continue;
+      const sumS = arr.reduce((s, x) => s + x.sales, 0);
+      const sumO = arr.reduce((s, x) => s + x.orders, 0);
+      cells[d][h].sales = sumS / arr.length;
+      cells[d][h].orders = sumO / arr.length;
+      cells[d][h].zeroSamples = arr.filter(x => x.sales === 0).length;
+    }
+  }
+
+  // ─── 그룹별 기준(평균·표준편차) 산출 ───
+  // baseline[group][hour] = { meanSales, stdSales, meanOrders, stdOrders, meanAvgTx, stdAvgTx, nSamples }
+  const baseline = { weekday: {}, friday: {}, weekend: {} };
+  GROUPS.forEach(g => {
+    for (let h = 0; h < 24; h++) {
+      // 해당 그룹에 속하는 요일들의 해당 시간 샘플 모두 모음
+      const bucket = [];
+      for (let d = 0; d < 7; d++) {
+        if (dowGroup(d) !== g) continue;
+        samples[d][h].forEach(s => bucket.push(s));
       }
+      if (bucket.length === 0) {
+        baseline[g][h] = null;
+        continue;
+      }
+      const sales = bucket.map(x => x.sales);
+      const orders = bucket.map(x => x.orders);
+      const avgTx = bucket.map(x => x.orders > 0 ? x.sales / x.orders : 0)
+                           .filter(v => v > 0);
+
+      const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
+      const std = arr => {
+        const m = mean(arr);
+        const v = arr.reduce((a, b) => a + (b - m) ** 2, 0) / arr.length;
+        return Math.sqrt(v);
+      };
+
+      baseline[g][h] = {
+        meanSales: mean(sales),
+        stdSales: std(sales),
+        meanOrders: mean(orders),
+        stdOrders: std(orders),
+        meanAvgTx: avgTx.length > 0 ? mean(avgTx) : 0,
+        stdAvgTx: avgTx.length > 0 ? std(avgTx) : 0,
+        nSamples: bucket.length,
+      };
     }
   });
 
-  // sampleCount는 요일 등장 횟수로 세팅
-  for (let d = 0; d < 7; d++) {
-    for (let h = 0; h < 24; h++) {
-      cells[d][h].sampleCount = dowAppearances[d];
-      // 평균값(avgTx)
-      cells[d][h].avgTx = cells[d][h].orderCount > 0
-        ? Math.round(cells[d][h].revenue / cells[d][h].orderCount)
-        : 0;
-    }
-  }
-
-  // zeroWeeks: 해당 요일×시간대가 0원이었던 "주 단위" 샘플 개수
-  // 일별 데이터로는 계산 애매하니, "해당 요일 등장 횟수 중 0원이었던 횟수"로 근사
-  for (let d = 0; d < 7; d++) {
-    for (let h = 0; h < 24; h++) {
-      let zeroCount = 0;
-      dateSet.forEach(dateStr => {
-        if (new Date(dateStr + 'T12:00:00').getDay() !== d) return;
-        const hourData = (byDateHour[dateStr] || {})[h];
-        if (!hourData || hourData.rev === 0) zeroCount++;
-      });
-      cells[d][h].zeroWeeks = zeroCount;
-    }
-  }
-
-  return cells;
+  return { cells, samples, baseline };
 }
 
-// 영업시간 감지 (데이터에서 매출 있는 최소/최대 시간 기준)
+// 현재 값 추출 (지표별)
+function getCellValue(cell, metric) {
+  if (!cell) return 0;
+  if (metric === 'revenue') return cell.sales;
+  if (metric === 'orderCount') return cell.orders;
+  if (metric === 'avgTx') return cell.orders > 0 ? cell.sales / cell.orders : 0;
+  return 0;
+}
+function getBaselineMean(b, metric) {
+  if (!b) return 0;
+  if (metric === 'revenue') return b.meanSales;
+  if (metric === 'orderCount') return b.meanOrders;
+  if (metric === 'avgTx') return b.meanAvgTx;
+  return 0;
+}
+function getBaselineStd(b, metric) {
+  if (!b) return 0;
+  if (metric === 'revenue') return b.stdSales;
+  if (metric === 'orderCount') return b.stdOrders;
+  if (metric === 'avgTx') return b.stdAvgTx;
+  return 0;
+}
+
+// 상태 분류 (기획서 기준)
+function classifyStatus(score, zScore) {
+  if (score >= 0.25 || zScore >= 1.5) return 'overload';
+  if (score <= -0.25 || zScore <= -1.5) return 'underperform';
+  return 'normal';
+}
+
+// 효율 유형 분류 (orders, avgTx의 baseline 대비로 판단)
+function classifyEfficiency(ordersDelta, avgTxDelta, salesDelta) {
+  // 유의미한 변화 기준: ±10% (노이즈 배제)
+  const TH = 0.1;
+  const oUp = ordersDelta > TH, oDown = ordersDelta < -TH;
+  const aUp = avgTxDelta > TH, aDown = avgTxDelta < -TH;
+  const sUp = salesDelta > TH, sDown = salesDelta < -TH;
+
+  if (oUp && sUp) return 'real_overload';        // 진짜 과부하
+  if (oUp && aDown) return 'fake_busy';          // 헛바쁨 (주문↑ 객단가↓)
+  if (oDown && aUp) return 'high_efficiency';    // 고효율 (주문↓ 객단가↑)
+  if (oDown && sDown) return 'demand_collapse';  // 수요 붕괴
+  return 'neutral';
+}
+
+// Z-score 색상 레벨 (-3 ~ +3)
+function zLevel(z) {
+  if (z === null || z === undefined || !isFinite(z)) return 0;
+  if (z <= -2) return -3;
+  if (z <= -1.5) return -2;
+  if (z <= -0.5) return -1;
+  if (z >= 2) return 3;
+  if (z >= 1.5) return 2;
+  if (z >= 0.5) return 1;
+  return 0;
+}
+
+// 영업시간 감지
 function detectBusinessHours(cells) {
   let minH = 24, maxH = -1;
   for (let d = 0; d < 7; d++) {
     for (let h = 0; h < 24; h++) {
-      if (cells[d][h].revenue > 0) {
+      if (cells[d][h].sales > 0) {
         if (h < minH) minH = h;
         if (h > maxH) maxH = h;
       }
     }
   }
-  if (maxH < 0) return { startHour: 9, endHour: 20 }; // fallback
+  if (maxH < 0) return { startHour: 9, endHour: 20 };
   return { startHour: minH, endHour: maxH };
 }
 
-// 같은 시간대의 모든 요일 평균 (표준: "14시의 평균은?" 같은 질문)
-function computeHourAverages(cells, metric) {
-  const hourAvgs = new Array(24).fill(0);
-  for (let h = 0; h < 24; h++) {
-    let sum = 0, cnt = 0;
-    for (let d = 0; d < 7; d++) {
-      const v = metricValue(cells[d][h], metric);
-      if (v > 0) { sum += v; cnt++; }
+// ─── 각 셀 분석 결과 계산 ───
+// result[dow][hour] = { sales, orders, avgTx, salesScore, salesZ, ordersScore, ordersZ, avgTxScore, avgTxZ, status, efficiency }
+function computeCellAnalysis(dataset, metric) {
+  const { cells, baseline } = dataset;
+  const result = [];
+  for (let d = 0; d < 7; d++) {
+    result.push([]);
+    for (let h = 0; h < 24; h++) {
+      const c = cells[d][h];
+      const g = dowGroup(d);
+      const b = baseline[g][h];
+
+      const avgTx = c.orders > 0 ? c.sales / c.orders : 0;
+
+      // baseline 없거나 n<3이면 분석 불가로 표시
+      const hasBaseline = b && b.nSamples >= 3;
+
+      // 각 지표의 score & z
+      const calc = (v, mean, std) => {
+        if (!hasBaseline || mean === 0) return { score: 0, z: 0, valid: false };
+        const score = (v - mean) / mean;
+        const z = std > 0 ? (v - mean) / std : 0;
+        return { score, z, valid: true };
+      };
+
+      const sales = calc(c.sales, b ? b.meanSales : 0, b ? b.stdSales : 0);
+      const orders = calc(c.orders, b ? b.meanOrders : 0, b ? b.stdOrders : 0);
+      const avgTxC = calc(avgTx, b ? b.meanAvgTx : 0, b ? b.stdAvgTx : 0);
+
+      // 선택된 지표 기준 상태
+      const cur = metric === 'revenue' ? sales
+                : metric === 'orderCount' ? orders
+                : avgTxC;
+      const status = cur.valid ? classifyStatus(cur.score, cur.z) : 'unknown';
+
+      // 효율 유형은 항상 매출 + 주문 + 객단가 조합으로
+      const efficiency = (sales.valid && orders.valid && avgTxC.valid)
+        ? classifyEfficiency(orders.score, avgTxC.score, sales.score)
+        : 'neutral';
+
+      result[d].push({
+        sales: c.sales, orders: c.orders, avgTx,
+        sampleCount: c.sampleCount, zeroSamples: c.zeroSamples,
+        group: g,
+        baselineSales: b ? b.meanSales : 0,
+        baselineOrders: b ? b.meanOrders : 0,
+        baselineAvgTx: b ? b.meanAvgTx : 0,
+        baselineN: b ? b.nSamples : 0,
+        salesScore: sales.score, salesZ: sales.z,
+        ordersScore: orders.score, ordersZ: orders.z,
+        avgTxScore: avgTxC.score, avgTxZ: avgTxC.z,
+        status, efficiency,
+        hasBaseline,
+      });
     }
-    hourAvgs[h] = cnt > 0 ? sum / cnt : 0;
   }
-  return hourAvgs;
+  return result;
 }
 
-// 지표 값 추출
-function metricValue(cell, metric) {
-  if (!cell) return 0;
-  if (metric === 'revenue') return cell.revenue;
-  if (metric === 'orderCount') return cell.orderCount;
-  if (metric === 'avgTx') return cell.avgTx;
-  return 0;
-}
-
-// 레벨 분류 (-2, -1, 0, 1, 2)
-function classifyLevel(delta) {
-  if (delta < -0.4) return -2;
-  if (delta < -0.2) return -1;
-  if (delta > 0.4) return 2;
-  if (delta > 0.2) return 1;
-  return 0;
-}
-
-// 셀의 마커 판정
-function cellMarkers(cell, delta, compareCell) {
-  const markers = new Set();
-  if (cell.sampleCount > 0) {
-    // 데드존: 75% 이상 0원
-    if (cell.zeroWeeks / cell.sampleCount >= 0.75) {
-      markers.add('dead');
-    }
-    // 과부하: 평균 +80% & 실제 값 있음
-    if (delta > 0.8 && cell.revenue > 0) {
-      markers.add('overload');
-    }
-    // 급감: 비교 ON + 전주/전년 대비 -30% 이하
-    if (compareCell && compareCell.revenue > 0 && cell.revenue > 0) {
-      const compDelta = (cell.revenue - compareCell.revenue) / compareCell.revenue;
-      if (compDelta < -0.3) markers.add('drop');
-    }
-  }
-  return markers;
-}
-
-// ─── 메인 렌더 함수 ───
+// ─── 렌더 메인 ───
 function renderHeatmap() {
   const grid = $('hmGrid');
   const legend = $('hmLegend');
@@ -7574,12 +7892,9 @@ function renderHeatmap() {
   const rangeEl = $('hmPeriodRange');
   if (!grid) return;
 
-  // 버튼 active 동기화
+  // 버튼 동기화
   document.querySelectorAll('#hmMetric .hm-seg-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.metric === heatmapState.metric);
-  });
-  document.querySelectorAll('#hmCompare .hm-seg-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.compare === heatmapState.compare);
   });
   document.querySelectorAll('#hmPeriod .hm-seg-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.period === heatmapState.period);
@@ -7591,85 +7906,72 @@ function renderHeatmap() {
     anomalyPanel.style.display = 'none';
     detail.classList.remove('show');
     rangeEl.textContent = '';
+    const insights = $('hmInsights');
+    if (insights) insights.style.display = 'none';
     return;
   }
 
-  // 기간 집계
   const { startStr, endStr } = getHeatmapPeriod();
-  const cells = aggregateHeatmap(startStr, endStr);
-  const businessHours = detectBusinessHours(cells);
-  const hourAvgs = computeHourAverages(cells, heatmapState.metric);
+  const dataset = buildHeatmapDataset(startStr, endStr);
+  const analysis = computeCellAnalysis(dataset, heatmapState.metric);
+  const businessHours = detectBusinessHours(dataset.cells);
 
-  // 기간 라벨
-  rangeEl.textContent = `${startStr.replace(/-/g, '.')} ~ ${endStr.replace(/-/g, '.')}`;
+  rangeEl.textContent = `${startStr.replace(/-/g, '.')} ~ ${endStr.replace(/-/g, '.')} · 그룹: 평일/금/주말`;
 
-  // 비교 집계
-  const compare = getHeatmapComparePeriod(startStr, endStr);
-  const compareCells = compare ? aggregateHeatmap(compare.startStr, compare.endStr) : null;
-
-  // 영업시간 범위
   const hours = [];
   for (let h = businessHours.startHour; h <= businessHours.endHour; h++) hours.push(h);
 
-  // 그리드 세팅 (요일 라벨 col + 시간 cols)
+  // 그리드: 그룹 레이블 + 요일 + 시간들
   grid.style.gridTemplateColumns = `32px repeat(${hours.length}, 30px)`;
 
   let html = '';
-  // 헤더 행 (좌상단 빈칸 + 시간)
+  // 헤더 행
   html += `<div class="hm-cell hm-cell-corner"></div>`;
   hours.forEach(h => {
-    // 6의 배수 또는 짝수 시만 숫자 표시 (모바일 가독성)
     const show = (h % 2 === 0);
     html += `<div class="hm-cell hm-cell-label">${show ? h : ''}</div>`;
   });
 
-  // 각 요일 행 (월~토,일 순서로 월/화/수/목/금/토/일 표시)
-  const dowOrder = [1, 2, 3, 4, 5, 6, 0]; // 월,화,수,목,금,토,일
+  // 요일 순서: 월,화,수,목 (평일) - 금 - 토,일 (주말)
+  const dowOrder = [1, 2, 3, 4, 5, 6, 0];
 
   dowOrder.forEach(d => {
     const dowClass = d === 0 ? 'dow-sun' : (d === 6 ? 'dow-sat' : '');
-    html += `<div class="hm-cell hm-cell-label ${dowClass}">${DOW_SHORT[d]}</div>`;
+    const groupClass = `group-${dowGroup(d)}`;
+    html += `<div class="hm-cell hm-cell-label ${dowClass} ${groupClass}">${DOW_SHORT[d]}</div>`;
     hours.forEach(h => {
-      const cell = cells[d][h];
-      const v = metricValue(cell, heatmapState.metric);
-      const avg = hourAvgs[h];
-      const cmpCell = compareCells ? compareCells[d][h] : null;
-
-      if (cell.sampleCount === 0 || (v === 0 && cell.zeroWeeks < cell.sampleCount * 0.75 && !cmpCell)) {
-        // 영업 외 또는 해당 요일이 기간에 안 나타남
-        if (cell.sampleCount === 0) {
-          html += `<div class="hm-cell empty" data-dow="${d}" data-hour="${h}">·</div>`;
-          return;
-        }
-      }
-
-      // 평균 대비 변화율
-      const delta = avg > 0 ? (v - avg) / avg : 0;
-      const level = v > 0 ? classifyLevel(delta) : -2; // 0원은 강한 음수로
-      const markers = cellMarkers(cell, delta, cmpCell);
-
-      // 데드존은 level 대신 "중성 빈 셀"처럼 취급
-      let cellClass;
-      if (markers.has('dead')) {
-        cellClass = 'empty';
-      } else if (v === 0) {
-        cellClass = 'lv-neg2';
-      } else {
-        cellClass = `lv-${level < 0 ? 'neg' + Math.abs(level) : (level > 0 ? 'pos' + level : '0')}`;
-      }
-
-      // 마커 아이콘 우선순위: overload > drop > dead
-      let markerHtml = '';
-      if (markers.has('overload')) markerHtml = `<span class="hm-cell-marker overload">⚠</span>`;
-      else if (markers.has('drop')) markerHtml = `<span class="hm-cell-marker drop">▼</span>`;
-      else if (markers.has('dead')) markerHtml = `<span class="hm-cell-marker dead">◦</span>`;
-
+      const a = analysis[d][h];
       const isSelected = heatmapState.selectedCell &&
         heatmapState.selectedCell.dow === d &&
         heatmapState.selectedCell.hour === h;
 
-      const displayVal = '';
-      html += `<div class="hm-cell ${cellClass} ${isSelected ? 'selected' : ''}" data-dow="${d}" data-hour="${h}">${markerHtml}${displayVal}</div>`;
+      if (a.sampleCount === 0) {
+        html += `<div class="hm-cell empty" data-dow="${d}" data-hour="${h}"></div>`;
+        return;
+      }
+      if (!a.hasBaseline) {
+        html += `<div class="hm-cell empty" data-dow="${d}" data-hour="${h}" title="표본 부족"></div>`;
+        return;
+      }
+
+      // 선택된 지표의 z-score로 색상
+      const z = heatmapState.metric === 'revenue' ? a.salesZ
+              : heatmapState.metric === 'orderCount' ? a.ordersZ
+              : a.avgTxZ;
+      const lvl = zLevel(z);
+      const cellClass = `z-${lvl < 0 ? 'neg' + Math.abs(lvl) : (lvl > 0 ? 'pos' + lvl : '0')}`;
+
+      // 상태 마커
+      let markerHtml = '';
+      if (a.status === 'overload') markerHtml = `<span class="hm-cell-marker overload">⚡</span>`;
+      else if (a.status === 'underperform') markerHtml = `<span class="hm-cell-marker underperform">▼</span>`;
+
+      // 효율 유형 배지 (우측하단)
+      let effHtml = '';
+      if (a.efficiency === 'fake_busy') effHtml = `<span class="hm-cell-eff fake">✕</span>`;
+      else if (a.efficiency === 'high_efficiency') effHtml = `<span class="hm-cell-eff high">◎</span>`;
+
+      html += `<div class="hm-cell ${cellClass} ${isSelected ? 'selected' : ''}" data-dow="${d}" data-hour="${h}">${markerHtml}${effHtml}</div>`;
     });
   });
 
@@ -7678,28 +7980,31 @@ function renderHeatmap() {
   // 범례
   legend.innerHTML = `
     <div class="hm-legend-scale">
-      <span>−40%</span>
+      <span>z-2</span>
       <div class="hm-legend-swatches">
         <div class="hm-legend-swatch" style="background:#b91c1c;"></div>
+        <div class="hm-legend-swatch" style="background:#ef4444;"></div>
         <div class="hm-legend-swatch" style="background:#fca5a5;"></div>
         <div class="hm-legend-swatch" style="background:#e4e4e7;"></div>
         <div class="hm-legend-swatch" style="background:#93c5fd;"></div>
+        <div class="hm-legend-swatch" style="background:#3b82f6;"></div>
         <div class="hm-legend-swatch" style="background:#1d4ed8;"></div>
       </div>
-      <span>+40%</span>
+      <span>z+2</span>
     </div>
     <div class="hm-legend-markers">
-      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#78350f;">⚠</span>과부하</div>
-      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#7f1d1d;">▼</span>급감</div>
-      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#a1a1aa;">◦</span>데드</div>
+      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#78350f;">⚡</span>과부하</div>
+      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#7f1d1d;">▼</span>저활성</div>
+      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#b91c1c;">✕</span>헛바쁨</div>
+      <div class="hm-legend-marker-item"><span class="hm-legend-marker-icon" style="color:#047857;">◎</span>고효율</div>
     </div>
   `;
 
-  // 이상 감지
-  const anomalies = detectHeatmapAnomalies(cells, compareCells, hourAvgs);
-  renderAnomalyPanel(anomalies);
+  // 이상 구간 TOP & 인사이트
+  renderHeatmapAnomalies(analysis);
+  renderHeatmapInsights(analysis, dataset);
 
-  // 이벤트: 셀 탭
+  // 셀 클릭
   grid.querySelectorAll('.hm-cell[data-dow]').forEach(el => {
     el.addEventListener('click', () => {
       const d = parseInt(el.dataset.dow);
@@ -7710,114 +8015,85 @@ function renderHeatmap() {
         el.classList.remove('selected');
       } else {
         heatmapState.selectedCell = { dow: d, hour: h };
-        renderHeatmapDetail(cells, compareCells, hourAvgs);
-        // 선택 셀만 outline 갱신
         grid.querySelectorAll('.hm-cell.selected').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
+        renderHeatmapDetail(analysis);
       }
     });
   });
 
-  // 상세 패널: 이전 선택 유지돼 있으면 업데이트
   if (heatmapState.selectedCell) {
-    renderHeatmapDetail(cells, compareCells, hourAvgs);
+    renderHeatmapDetail(analysis);
   } else {
     detail.classList.remove('show');
   }
 }
 
-// ─── 이상 감지 ───
-function detectHeatmapAnomalies(cells, compareCells, hourAvgs) {
-  const anomalies = [];
-  for (let d = 0; d < 7; d++) {
-    for (let h = 0; h < 24; h++) {
-      const cell = cells[d][h];
-      if (cell.sampleCount === 0) continue;
-
-      const v = metricValue(cell, heatmapState.metric);
-      const avg = hourAvgs[h];
-      const delta = avg > 0 ? (v - avg) / avg : 0;
-      const cmp = compareCells ? compareCells[d][h] : null;
-
-      // 데드존
-      if (cell.sampleCount >= 2 && cell.zeroWeeks / cell.sampleCount >= 0.75) {
-        anomalies.push({
-          type: 'dead', dow: d, hour: h,
-          severity: cell.zeroWeeks / cell.sampleCount,
-          label: `${DOW_SHORT[d]} ${h}시 · 데드존`,
-          reason: `${cell.zeroWeeks}/${cell.sampleCount}주 0원`,
-        });
-        continue;
-      }
-
-      // 과부하 (orderCount 상위 95% 체크는 단순화: 평균 +80%)
-      if (delta > 0.8 && v > 0 && heatmapState.metric === 'revenue') {
-        anomalies.push({
-          type: 'overload', dow: d, hour: h,
-          severity: delta,
-          label: `${DOW_SHORT[d]} ${h}시 · 과부하`,
-          reason: `평균 +${Math.round(delta * 100)}%`,
-        });
-      }
-
-      // 급감
-      if (cmp) {
-        const cmpV = metricValue(cmp, heatmapState.metric);
-        if (cmpV > 0 && v > 0) {
-          const cmpDelta = (v - cmpV) / cmpV;
-          if (cmpDelta < -0.3) {
-            anomalies.push({
-              type: 'drop', dow: d, hour: h,
-              severity: -cmpDelta,
-              label: `${DOW_SHORT[d]} ${h}시 · 급감`,
-              reason: `${heatmapState.compare === 'prev' ? '전주' : '전년'} 대비 ${Math.round(cmpDelta * 100)}%`,
-            });
-          }
-        }
-      }
-    }
-  }
-  // 심각도 내림차순, 상위 5개
-  anomalies.sort((a, b) => b.severity - a.severity);
-  return anomalies.slice(0, 5);
-}
-
-function renderAnomalyPanel(anomalies) {
+// ─── 이상 구간 TOP (과부하/저활성/헛바쁨) ───
+function renderHeatmapAnomalies(analysis) {
   const panel = $('hmAnomalies');
   if (!panel) return;
-  if (anomalies.length === 0) {
+
+  const flat = [];
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      const a = analysis[d][h];
+      if (!a.hasBaseline || a.sampleCount === 0) continue;
+      flat.push({ dow: d, hour: h, ...a });
+    }
+  }
+  const metric = heatmapState.metric;
+  const z = (x) => metric === 'revenue' ? x.salesZ : (metric === 'orderCount' ? x.ordersZ : x.avgTxZ);
+  const sc = (x) => metric === 'revenue' ? x.salesScore : (metric === 'orderCount' ? x.ordersScore : x.avgTxScore);
+
+  const overload = flat
+    .filter(x => x.status === 'overload')
+    .sort((a, b) => z(b) - z(a))
+    .slice(0, 5);
+  const under = flat
+    .filter(x => x.status === 'underperform')
+    .sort((a, b) => z(a) - z(b))
+    .slice(0, 5);
+  const fakeBusy = flat
+    .filter(x => x.efficiency === 'fake_busy')
+    .sort((a, b) => b.ordersScore - a.ordersScore)
+    .slice(0, 5);
+
+  if (overload.length === 0 && under.length === 0 && fakeBusy.length === 0) {
     panel.style.display = 'none';
-    panel.innerHTML = '';
     return;
   }
-  const items = anomalies.map(a => {
-    const icon = a.type === 'drop' ? '▼' : (a.type === 'overload' ? '⚠' : '◦');
-    return `
-      <div class="hm-anomaly-item" data-dow="${a.dow}" data-hour="${a.hour}">
-        <div class="hm-anomaly-icon ${a.type}">${icon}</div>
-        <div class="hm-anomaly-text">
-          <span class="hm-anomaly-slot">${a.label}</span>
-          <span class="hm-anomaly-reason">${a.reason}</span>
-        </div>
-      </div>`;
-  }).join('');
+
+  const fmt = (x) => `${DOW_SHORT[x.dow]} ${x.hour}시`;
+  const pct = (v) => (v > 0 ? '+' : '') + (v * 100).toFixed(0) + '%';
+  const section = (title, items, color, icon) => items.length === 0 ? '' : `
+    <div class="hm-anom-section">
+      <div class="hm-anom-section-title" style="color:${color};">${icon} ${title}<span class="hm-anomaly-count">${items.length}</span></div>
+      <div class="hm-anomaly-list">
+        ${items.map(x => `
+          <div class="hm-anomaly-item" data-dow="${x.dow}" data-hour="${x.hour}">
+            <div class="hm-anomaly-text">
+              <span class="hm-anomaly-slot">${fmt(x)}</span>
+              <span class="hm-anomaly-reason">${GROUP_LABEL[x.group]} 평균 대비 ${pct(sc(x))} · z=${z(x).toFixed(1)}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
 
   panel.innerHTML = `
-    <div class="hm-anomalies-title">
-      ⚡ 감지된 이상
-      <span class="hm-anomaly-count">${anomalies.length}건</span>
-    </div>
-    <div class="hm-anomaly-list">${items}</div>
+    <div class="hm-anomalies-title">⚡ 이상 구간 분석</div>
+    ${section('과부하 TOP', overload, '#b45309', '⚡')}
+    ${section('저활성 TOP', under, '#b91c1c', '▼')}
+    ${section('헛바쁨 구간', fakeBusy, '#c2410c', '✕')}
   `;
   panel.style.display = '';
 
-  // 탭하면 해당 셀로 점프 + 상세 펼침
   panel.querySelectorAll('.hm-anomaly-item').forEach(item => {
     item.addEventListener('click', () => {
       const d = parseInt(item.dataset.dow);
       const h = parseInt(item.dataset.hour);
       heatmapState.selectedCell = { dow: d, hour: h };
-      // 해당 셀 find & 클릭 트리거처럼
       const cellEl = document.querySelector(`.hm-cell[data-dow="${d}"][data-hour="${h}"]`);
       if (cellEl) {
         document.querySelectorAll('.hm-cell.selected').forEach(c => c.classList.remove('selected'));
@@ -7829,128 +8105,241 @@ function renderAnomalyPanel(anomalies) {
   });
 }
 
+// ─── 인사이트 + 실행 액션 자동 생성 ───
+function renderHeatmapInsights(analysis, dataset) {
+  const box = $('hmInsights');
+  if (!box) return;
+
+  const flat = [];
+  for (let d = 0; d < 7; d++) {
+    for (let h = 0; h < 24; h++) {
+      const a = analysis[d][h];
+      if (a.hasBaseline && a.sampleCount > 0) flat.push({ dow: d, hour: h, ...a });
+    }
+  }
+  if (flat.length === 0) {
+    box.style.display = 'none';
+    return;
+  }
+
+  // 1) 그룹별 특징 요약: 각 그룹에서 과부하/저활성 시간대 개수
+  const groupStats = { weekday: { over: [], under: [], total: 0 }, friday: { over: [], under: [], total: 0 }, weekend: { over: [], under: [], total: 0 } };
+  flat.forEach(x => {
+    const g = groupStats[x.group];
+    g.total++;
+    if (x.status === 'overload') g.over.push(x);
+    if (x.status === 'underperform') g.under.push(x);
+  });
+
+  // 2) 구조적 문제 vs 일시적 변동:
+  // 구조적 = 같은 그룹에 여러 날짜에서 반복적으로 저조 (표본수 많고 zero 비율 높음)
+  // 일시적 = 표본수 적은데 최근 z값 극단
+  const structural = flat.filter(x => {
+    if (x.status !== 'underperform') return false;
+    if (x.sampleCount < 4) return false;
+    return (x.zeroSamples / x.sampleCount) >= 0.4;
+  }).sort((a, b) => (b.zeroSamples / b.sampleCount) - (a.zeroSamples / a.sampleCount)).slice(0, 3);
+
+  const temporary = flat.filter(x => {
+    return x.sampleCount >= 2 && x.sampleCount < 5 && Math.abs(x.salesZ) >= 2;
+  }).slice(0, 3);
+
+  // 3) 요일별 특징 요약 문장
+  const groupSummary = GROUPS.map(g => {
+    const s = groupStats[g];
+    if (s.total === 0) return null;
+    const overPct = s.over.length / s.total * 100;
+    const underPct = s.under.length / s.total * 100;
+    let desc;
+    if (overPct > 20 && underPct < 15) desc = '전반적으로 강한 편';
+    else if (underPct > 25) desc = '대부분 시간대가 기준 미달';
+    else if (overPct > 15 && underPct > 15) desc = '편차가 크고 피크/공백 혼재';
+    else desc = '안정적으로 기준 근처';
+    return { group: g, desc, overCount: s.over.length, underCount: s.under.length, total: s.total };
+  }).filter(x => x);
+
+  // 4) 실행 액션 3개 생성 (인력 / 운영시간 / 매출 전략)
+  const actions = [];
+
+  // 인력: 과부하 + 헛바쁨 많은 시간대 조합 → 인력 배치 조정
+  const overload = flat.filter(x => x.status === 'overload').sort((a, b) => b.ordersZ - a.ordersZ).slice(0, 3);
+  const fakeBusy = flat.filter(x => x.efficiency === 'fake_busy').slice(0, 3);
+  if (overload.length > 0 || fakeBusy.length > 0) {
+    const slots = [...overload.slice(0, 2), ...fakeBusy.slice(0, 1)];
+    const slotTxt = slots.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
+    actions.push({
+      category: '인력',
+      title: '피크 시간 인력 보강',
+      detail: `${slotTxt}${fakeBusy.length > 0 ? ' — 특히 헛바쁨 시간대는 계산/응대 분리 필요' : ''}`,
+    });
+  }
+
+  // 운영시간: 구조적 저활성 시간대 → 단축 검토
+  if (structural.length > 0) {
+    const slotTxt = structural.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
+    actions.push({
+      category: '운영시간',
+      title: '저활성 시간대 단축 검토',
+      detail: `${slotTxt} — ${structural.length}개 시간대가 40% 이상 0원. 운영비 대비 비효율`,
+    });
+  }
+
+  // 매출 전략: 고효율 시간대 확대 또는 수요 붕괴 시간대 프로모션
+  const highEff = flat.filter(x => x.efficiency === 'high_efficiency').sort((a, b) => b.avgTxScore - a.avgTxScore).slice(0, 2);
+  const collapse = flat.filter(x => x.efficiency === 'demand_collapse').slice(0, 2);
+  if (highEff.length > 0) {
+    const slotTxt = highEff.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
+    actions.push({
+      category: '매출 전략',
+      title: '고효율 시간대 공략 확대',
+      detail: `${slotTxt} — 주문 적지만 객단가 높음. 프리미엄 메뉴/세트 푸시 기회`,
+    });
+  } else if (collapse.length > 0) {
+    const slotTxt = collapse.map(s => `${DOW_SHORT[s.dow]} ${s.hour}시`).join(', ');
+    actions.push({
+      category: '매출 전략',
+      title: '수요 붕괴 구간 회복 프로모션',
+      detail: `${slotTxt} — 주문수·매출 동반 하락. 원인 파악 후 할인/이벤트 검토`,
+    });
+  }
+
+  box.innerHTML = `
+    <div class="hm-insights-title">💡 인사이트</div>
+
+    <div class="hm-insights-section">
+      <div class="hm-insights-section-label">요일 그룹별 특징</div>
+      ${groupSummary.map(g => `
+        <div class="hm-insights-row">
+          <span class="hm-insights-group group-${g.group}">${GROUP_LABEL[g.group]}</span>
+          <span class="hm-insights-desc">${g.desc}</span>
+          <span class="hm-insights-meta">과부하 ${g.overCount} · 저활성 ${g.underCount} / ${g.total}칸</span>
+        </div>
+      `).join('')}
+    </div>
+
+    ${structural.length > 0 ? `
+    <div class="hm-insights-section">
+      <div class="hm-insights-section-label">구조적 문제 (반복 저조)</div>
+      <div class="hm-insights-tags">
+        ${structural.map(x => `<span class="hm-insights-tag structural">${DOW_SHORT[x.dow]} ${x.hour}시 · ${Math.round(x.zeroSamples / x.sampleCount * 100)}% 0원</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${temporary.length > 0 ? `
+    <div class="hm-insights-section">
+      <div class="hm-insights-section-label">일시적 변동 (표본 부족)</div>
+      <div class="hm-insights-tags">
+        ${temporary.map(x => `<span class="hm-insights-tag temporary">${DOW_SHORT[x.dow]} ${x.hour}시 · z=${x.salesZ.toFixed(1)}</span>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${actions.length > 0 ? `
+    <div class="hm-insights-section">
+      <div class="hm-insights-section-label">🎯 실행 액션</div>
+      ${actions.map(a => `
+        <div class="hm-action-row">
+          <span class="hm-action-cat">${a.category}</span>
+          <div class="hm-action-body">
+            <div class="hm-action-title">${a.title}</div>
+            <div class="hm-action-detail">${a.detail}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+  `;
+  box.style.display = '';
+}
+
 // ─── 선택 셀 상세 ───
-function renderHeatmapDetail(cellsArg, compareCellsArg, hourAvgsArg) {
+function renderHeatmapDetail(analysisArg) {
   const detail = $('hmDetail');
   if (!detail || !heatmapState.selectedCell) return;
 
-  // 데이터 없으면 다시 집계
-  let cells = cellsArg, compareCells = compareCellsArg, hourAvgs = hourAvgsArg;
-  if (!cells) {
+  let analysis = analysisArg;
+  if (!analysis) {
     const { startStr, endStr } = getHeatmapPeriod();
-    cells = aggregateHeatmap(startStr, endStr);
-    const compare = getHeatmapComparePeriod(startStr, endStr);
-    compareCells = compare ? aggregateHeatmap(compare.startStr, compare.endStr) : null;
-    hourAvgs = computeHourAverages(cells, heatmapState.metric);
+    const ds = buildHeatmapDataset(startStr, endStr);
+    analysis = computeCellAnalysis(ds, heatmapState.metric);
   }
 
   const { dow, hour } = heatmapState.selectedCell;
-  const cell = cells[dow][hour];
-  const cmp = compareCells ? compareCells[dow][hour] : null;
-  const v = metricValue(cell, heatmapState.metric);
-  const avg = hourAvgs[hour];
-  const delta = avg > 0 ? (v - avg) / avg : 0;
+  const a = analysis[dow][hour];
 
-  // 포맷터
-  const formatValue = (val) => {
-    if (heatmapState.metric === 'revenue') return val.toLocaleString() + '원';
-    if (heatmapState.metric === 'orderCount') return val.toLocaleString() + '건';
-    if (heatmapState.metric === 'avgTx') return val.toLocaleString() + '원';
-    return val;
+  const STATUS_LABEL = { overload: '⚡ 과부하', underperform: '▼ 저활성', normal: '정상', unknown: '표본 부족' };
+  const EFF_LABEL = {
+    real_overload: { label: '진짜 과부하', desc: '주문·매출 동반 상승', cls: 'real' },
+    fake_busy: { label: '헛바쁨', desc: '주문↑ 객단가↓', cls: 'fake' },
+    high_efficiency: { label: '고효율', desc: '주문↓ 객단가↑', cls: 'high' },
+    demand_collapse: { label: '수요 붕괴', desc: '주문·매출 동반 하락', cls: 'collapse' },
+    neutral: { label: '중립', desc: '', cls: 'neutral' },
   };
-  const metricLabel = heatmapState.metric === 'revenue' ? '매출'
-    : heatmapState.metric === 'orderCount' ? '주문수' : '객단가';
 
-  // 비교 항목 생성
-  const compareRows = [];
-  // vs 평균 (같은 시간대)
-  compareRows.push({
-    label: '같은 시간 평균',
-    delta,
-    prevVal: avg,
-    prevLabel: `평균 ${formatValue(Math.round(avg))}`,
-  });
-  // vs 전주 (비교 ON 시)
-  if (cmp && heatmapState.compare === 'prev') {
-    const cmpV = metricValue(cmp, heatmapState.metric);
-    const cmpDelta = cmpV > 0 ? (v - cmpV) / cmpV : 0;
-    compareRows.push({
-      label: '전주 대비',
-      delta: cmpV > 0 ? cmpDelta : null,
-      prevVal: cmpV,
-      prevLabel: cmpV > 0 ? `전주 ${formatValue(cmpV)}` : '전주 데이터 없음',
-    });
-  }
-  if (cmp && heatmapState.compare === 'year') {
-    const cmpV = metricValue(cmp, heatmapState.metric);
-    const cmpDelta = cmpV > 0 ? (v - cmpV) / cmpV : 0;
-    compareRows.push({
-      label: '전년 대비',
-      delta: cmpV > 0 ? cmpDelta : null,
-      prevVal: cmpV,
-      prevLabel: cmpV > 0 ? `전년 ${formatValue(cmpV)}` : '전년 데이터 없음',
-    });
-  }
+  const fmt = v => Math.round(v).toLocaleString();
+  const pct = v => (v > 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+  const sign = v => v > 0.02 ? 'up' : (v < -0.02 ? 'down' : 'flat');
 
-  const compareHtml = compareRows.map(r => {
-    let valHtml, barHtml;
-    if (r.delta === null || r.delta === undefined || !isFinite(r.delta)) {
-      valHtml = `<span class="hm-detail-compare-val flat">—</span>`;
-      barHtml = `<span class="hm-detail-compare-bar-center"></span>`;
-    } else {
-      const pct = r.delta * 100;
-      const cls = r.delta > 0.02 ? 'up' : (r.delta < -0.02 ? 'down' : 'flat');
-      const arrow = r.delta > 0.02 ? '▲' : (r.delta < -0.02 ? '▼' : '―');
-      const sign = r.delta > 0 ? '+' : '';
-      valHtml = `<span class="hm-detail-compare-val ${cls}">${arrow} ${sign}${pct.toFixed(1)}%</span>`;
-      // 바: 중앙 기준 좌(하락)/우(상승). 최대 ±100%를 화면의 ±50% 폭으로
-      const widthPct = Math.min(Math.abs(pct), 100) / 2;
-      barHtml = `<span class="hm-detail-compare-bar-fill ${cls}" style="width:${widthPct}%;"></span><span class="hm-detail-compare-bar-center"></span>`;
-    }
-    return `
-      <div class="hm-detail-compare">
-        <div class="hm-detail-compare-label">${r.label}</div>
-        <div class="hm-detail-compare-bar">${barHtml}</div>
-        <div>
-          ${valHtml}
-          <div class="hm-detail-compare-prev">${r.prevLabel}</div>
+  const eff = EFF_LABEL[a.efficiency] || EFF_LABEL.neutral;
+  const statusLabel = STATUS_LABEL[a.status];
+
+  let contents;
+  if (!a.hasBaseline) {
+    contents = `
+      <div class="hm-detail-body">
+        <div class="hm-empty">
+          표본 부족 (${a.sampleCount}개)<br>
+          최소 3개 이상 필요. 기간을 늘려주세요.
         </div>
       </div>`;
-  }).join('');
+  } else {
+    contents = `
+      <div class="hm-detail-body">
+        <div class="hm-detail-status-row">
+          <span class="hm-status-chip status-${a.status}">${statusLabel}</span>
+          <span class="hm-eff-chip eff-${eff.cls}">${eff.label}${eff.desc ? ' · ' + eff.desc : ''}</span>
+        </div>
 
-  // 마커 칩
-  const markers = cellMarkers(cell, delta, cmp);
-  const markerChips = [];
-  if (markers.has('overload')) markerChips.push('<span class="hm-detail-marker-chip overload">⚠ 과부하</span>');
-  if (markers.has('drop')) markerChips.push('<span class="hm-detail-marker-chip drop">▼ 급감</span>');
-  if (markers.has('dead')) markerChips.push('<span class="hm-detail-marker-chip dead">◦ 데드존</span>');
-  const markersHtml = markerChips.length > 0
-    ? `<div class="hm-detail-markers">${markerChips.join('')}</div>`
-    : '';
+        <div class="hm-detail-group-info">
+          <span>그룹 기준: <strong>${GROUP_LABEL[a.group]}</strong> ${hour}시 평균</span>
+          <span>표본 ${a.baselineN}개</span>
+        </div>
 
-  // 서브 정보 (선택 셀 총/주문/객단가 중 지표와 다른 두 개)
-  const subItems = [];
-  if (heatmapState.metric !== 'revenue') subItems.push(`매출 ${cell.revenue.toLocaleString()}원`);
-  if (heatmapState.metric !== 'orderCount') subItems.push(`주문 ${cell.orderCount.toLocaleString()}건`);
-  if (heatmapState.metric !== 'avgTx') subItems.push(`객단가 ${cell.avgTx.toLocaleString()}원`);
-  subItems.push(`표본 ${cell.sampleCount}주`);
+        <table class="hm-metric-table">
+          <thead>
+            <tr><th></th><th>현재</th><th>기준</th><th>증감</th><th>z-score</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="hm-mt-label">매출</td>
+              <td class="hm-mt-val">${fmt(a.sales)}원</td>
+              <td class="hm-mt-base">${fmt(a.baselineSales)}원</td>
+              <td class="hm-mt-delta ${sign(a.salesScore)}">${pct(a.salesScore)}</td>
+              <td class="hm-mt-z">${a.salesZ.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td class="hm-mt-label">주문</td>
+              <td class="hm-mt-val">${a.orders.toFixed(1)}건</td>
+              <td class="hm-mt-base">${a.baselineOrders.toFixed(1)}건</td>
+              <td class="hm-mt-delta ${sign(a.ordersScore)}">${pct(a.ordersScore)}</td>
+              <td class="hm-mt-z">${a.ordersZ.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td class="hm-mt-label">객단가</td>
+              <td class="hm-mt-val">${fmt(a.avgTx)}원</td>
+              <td class="hm-mt-base">${fmt(a.baselineAvgTx)}원</td>
+              <td class="hm-mt-delta ${sign(a.avgTxScore)}">${pct(a.avgTxScore)}</td>
+              <td class="hm-mt-z">${a.avgTxZ.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+  }
 
   detail.innerHTML = `
     <div class="hm-detail-header">
       <div class="hm-detail-title">${DOW_SHORT[dow]}요일 ${hour}시</div>
       <button class="hm-detail-close" onclick="closeHeatmapDetail()">✕</button>
     </div>
-    <div class="hm-detail-body">
-      <div class="hm-detail-primary">
-        <div class="hm-detail-metric">${formatValue(v)}</div>
-        <div class="hm-detail-subs">
-          <div class="hm-detail-sub-item">${metricLabel}</div>
-          ${subItems.map(s => `<div class="hm-detail-sub-item">${s}</div>`).join('')}
-        </div>
-      </div>
-      <div class="hm-detail-compare-list">${compareHtml}</div>
-      ${markersHtml}
-    </div>
+    ${contents}
   `;
   detail.classList.add('show');
 }
@@ -7962,22 +8351,15 @@ function closeHeatmapDetail() {
   document.querySelectorAll('.hm-cell.selected').forEach(c => c.classList.remove('selected'));
 }
 
-// 컨트롤 이벤트 바인딩 (한 번만 호출)
+// 컨트롤 이벤트
 let heatmapControlsBound = false;
 function bindHeatmapControls() {
   if (heatmapControlsBound) return;
   heatmapControlsBound = true;
-
   document.querySelectorAll('#hmMetric .hm-seg-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       heatmapState.metric = btn.dataset.metric;
       heatmapState.selectedCell = null;
-      renderHeatmap();
-    });
-  });
-  document.querySelectorAll('#hmCompare .hm-seg-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      heatmapState.compare = btn.dataset.compare;
       renderHeatmap();
     });
   });
@@ -7989,6 +8371,7 @@ function bindHeatmapControls() {
     });
   });
 }
+
 
 // ═══════════════════════════════════════════════════════════
 // 요약 페이지 렌더링
