@@ -1480,32 +1480,37 @@
     margin-bottom: 6px;
   }
   .sd-compares {
-    display: flex;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
     margin-top: 14px;
     padding-top: 14px;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
-    flex-wrap: wrap;
   }
   .sd-compare {
     display: flex;
     flex-direction: column;
     font-family: 'Pretendard', sans-serif;
+    min-width: 0;
   }
   .sd-compare-label {
     font-size: 10px;
     color: rgba(255, 255, 255, 0.7);
     font-weight: 600;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .sd-compare-val {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     margin-top: 3px;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     color: #fff;
+    white-space: nowrap;
   }
   .sd-compare-val.up { color: #7efcaa; }
   .sd-compare-val.down { color: #ffb0b0; }
@@ -1515,6 +1520,9 @@
     color: rgba(255, 255, 255, 0.6);
     font-weight: 500;
     margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* 시간대 미니 차트 (히어로 내부) */
@@ -4657,6 +4665,10 @@ async function renderTodayMainPage() {
     const yearAgoStr = getSameDayOfWeek(todayStr, 1);
     const yearAgoData = analyzeDayRecords(yearAgoStr);
 
+    // 전전년 동요일 (2년 전 같은 요일)
+    const year2AgoStr = getSameDayOfWeek(todayStr, 2);
+    const year2AgoData = analyzeDayRecords(year2AgoStr);
+
     const renderCompare = (curr, prev, label, prevDateStr) => {
       if (!prev || prev.revenue === 0) {
         return `
@@ -4692,6 +4704,7 @@ async function renderTodayMainPage() {
         <div class="sd-compares">
           ${renderCompare(selectedAnalysis, weekAgoData, '전주 대비', weekAgoStr.slice(5))}
           ${renderCompare(selectedAnalysis, yearAgoData, '전년 대비', yearAgoStr.slice(2).replace(/-/g, '.'))}
+          ${renderCompare(selectedAnalysis, year2AgoData, '전전년 대비', year2AgoStr.slice(2).replace(/-/g, '.'))}
         </div>
       </div>`;
     sdBlock.style.display = '';
