@@ -814,6 +814,12 @@
     font-weight: 500;
   }
   .btn-outline:hover { background: var(--bg-muted); border-color: var(--ink-dim); }
+  .btn-outline:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: var(--bg-muted);
+  }
+  .btn-outline:disabled:hover { background: var(--bg-muted); border-color: var(--line); }
 
   .btn-danger {
     background: var(--card);
@@ -830,6 +836,63 @@
     font-weight: 500;
   }
   .btn-danger:hover { background: var(--danger); color: #fff; }
+
+  /* 날짜별 삭제 UI */
+  .date-delete-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .date-delete-input {
+    flex: 1;
+    padding: 10px 12px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    min-width: 0;
+  }
+  .date-delete-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-tint);
+  }
+  .date-delete-row .btn-outline {
+    padding: 9px 16px;
+    width: auto;
+    flex-shrink: 0;
+  }
+  .date-delete-preview {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    font-size: 12px;
+    color: var(--ink-dim);
+    display: none;
+  }
+  .date-delete-preview.show { display: block; }
+  .date-delete-preview.has-data {
+    background: var(--danger-soft);
+    border-color: rgba(185, 28, 28, 0.2);
+    color: #7f1d1d;
+  }
+  .date-delete-preview-title {
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+  .date-delete-preview.has-data .date-delete-preview-title { color: #b91c1c; }
+  .date-delete-preview-stats {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+  }
 
   /* 파일 리스트 */
   .file-list { max-height: 200px; overflow-y: auto; margin-top: 10px; }
@@ -4059,6 +4122,15 @@
     </div>
 
     <div class="modal-section">
+      <div class="modal-section-title">🗑 날짜별 삭제</div>
+      <div class="date-delete-row">
+        <input type="date" id="deleteDateInput" class="date-delete-input">
+        <button class="btn-outline" id="btnDeleteByDate" disabled>삭제</button>
+      </div>
+      <div id="deleteDatePreview" class="date-delete-preview"></div>
+    </div>
+
+    <div class="modal-section">
       <div class="modal-section-title" style="color: var(--danger);">⚠ 위험 구역</div>
       <button class="btn-danger" id="btnWipe">모든 데이터 삭제</button>
     </div>
@@ -4369,6 +4441,17 @@ async function dbDeleteByFile(fname) {
   const all = await idbGetAll('records');
   const keep = all.filter(r => r.file !== fname);
   const deleted = all.length - keep.length;
+  await idbClear('records');
+  for (const r of keep) await idbPut('records', r);
+  await ghPush('records').catch(e => console.warn('GitHub sync:', e.message));
+  return deleted;
+}
+
+async function dbDeleteByDate(dateStr) {
+  const all = await idbGetAll('records');
+  const keep = all.filter(r => r.date !== dateStr);
+  const deleted = all.length - keep.length;
+  if (deleted === 0) return 0;
   await idbClear('records');
   for (const r of keep) await idbPut('records', r);
   await ghPush('records').catch(e => console.warn('GitHub sync:', e.message));
@@ -5849,6 +5932,72 @@ async function wipeAll() {
   await dbClear('files');
   hideStatus();
   toast('✓ 모두 삭제됨', 'success');
+  await refreshAll();
+}
+
+// ─── 날짜별 데이터 삭제 ───
+function updateDeletePreview() {
+  const input = $('deleteDateInput');
+  const preview = $('deleteDatePreview');
+  const btn = $('btnDeleteByDate');
+  if (!input || !preview) return;
+
+  const dateStr = input.value;
+  if (!dateStr) {
+    preview.classList.remove('show', 'has-data');
+    preview.innerHTML = '';
+    if (btn) btn.disabled = true;
+    return;
+  }
+
+  const recs = allRecords.filter(r => r.date === dateStr);
+  if (recs.length === 0) {
+    preview.classList.remove('has-data');
+    preview.classList.add('show');
+    preview.innerHTML = `
+      <div class="date-delete-preview-title">${dateStr}</div>
+      <div class="date-delete-preview-stats">데이터 없음</div>
+    `;
+    if (btn) btn.disabled = true;
+    return;
+  }
+
+  const totalSales = recs.reduce((s, r) => s + r.amount, 0);
+  const orderCount = recs.filter(r => !r.manual).length;
+  const manualCount = recs.filter(r => r.manual).length;
+  const dow = ['일','월','화','수','목','금','토'][new Date(dateStr + 'T12:00:00').getDay()];
+
+  preview.classList.add('show', 'has-data');
+  preview.innerHTML = `
+    <div class="date-delete-preview-title">${dateStr} (${dow}) · ${recs.length}건 삭제 예정</div>
+    <div class="date-delete-preview-stats">
+      매출 ${totalSales.toLocaleString()}원<br>
+      ${orderCount > 0 ? `POS 주문 ${orderCount}건` : ''}${orderCount > 0 && manualCount > 0 ? ' · ' : ''}${manualCount > 0 ? `수기 ${manualCount}건` : ''}
+    </div>
+  `;
+  if (btn) btn.disabled = false;
+}
+
+async function deleteByDate() {
+  const input = $('deleteDateInput');
+  if (!input || !input.value) return;
+  const dateStr = input.value;
+  const recs = allRecords.filter(r => r.date === dateStr);
+  if (recs.length === 0) {
+    toast('해당 날짜에 데이터가 없습니다', 'error');
+    return;
+  }
+  if (!confirm(`${dateStr} 데이터 ${recs.length}건을 삭제할까요?\n되돌릴 수 없습니다.`)) return;
+
+  showStatus('삭제 중…', 'info', true);
+  const deleted = await dbDeleteByDate(dateStr);
+  hideStatus();
+  toast(`✓ ${deleted}건 삭제됨`, 'success');
+
+  // 입력 초기화
+  input.value = '';
+  updateDeletePreview();
+
   await refreshAll();
 }
 
@@ -9406,6 +9555,10 @@ function setupEvents() {
 
   $('btnData').addEventListener('click', async () => {
     openModal('dataModal');
+    // 날짜 삭제 입력 초기화
+    const di = $('deleteDateInput');
+    if (di) di.value = '';
+    updateDeletePreview();
     await refreshManualRecent();
   });
   $('btnSettings').addEventListener('click', () => {
@@ -9463,6 +9616,11 @@ function setupEvents() {
     e.target.value = '';
   });
   $('btnWipe').addEventListener('click', wipeAll);
+
+  // 날짜별 삭제
+  $('deleteDateInput').addEventListener('input', updateDeletePreview);
+  $('deleteDateInput').addEventListener('change', updateDeletePreview);
+  $('btnDeleteByDate').addEventListener('click', deleteByDate);
 
   // 설정
   $('settingCurrency').addEventListener('change', e => saveSetting('currency', e.target.value));
