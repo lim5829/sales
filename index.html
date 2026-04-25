@@ -1217,6 +1217,31 @@
   .top-panel { display: none; }
   .top-panel.active { display: block; animation: fadeIn 0.25s ease; }
 
+  /* ─── 좌우 스와이프 뷰포트 ─── */
+  .top-panels-viewport {
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+    touch-action: pan-y; /* 세로 스크롤은 유지, 가로만 제스처로 */
+  }
+  .top-panels-strip {
+    display: flex;
+    width: 300%; /* 3개 패널 */
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .top-panels-strip.dragging {
+    transition: none;
+  }
+  .top-panels-viewport .top-panel {
+    display: block !important; /* 모두 렌더 유지, 슬라이드로 이동 */
+    flex: 0 0 33.333%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-right: 2px;
+    animation: none;
+  }
+
   /* 요약 패널 플레이스홀더 */
   .summary-placeholder {
     text-align: center;
@@ -1415,6 +1440,7 @@
     -webkit-overflow-scrolling: touch;
     margin: 0 -4px;
     padding: 0 4px;
+    touch-action: pan-x; /* 가로만 스크롤. 세로/패널 스와이프와 충돌 방지 */
   }
   .hm-scroll::-webkit-scrollbar { height: 4px; }
   .hm-scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 2px; }
@@ -3888,10 +3914,8 @@
 
   <!-- 메인 콘텐츠 -->
   <div class="dashboard" id="dashboard">
-    <!-- ═══ 비교 패널 (월별 연도 비교) ═══ -->
-    <div class="top-panel" id="top-compare">
-      <div id="monthlyBreakdownCard"></div>
-    </div>
+    <div class="top-panels-viewport" id="topPanelsViewport">
+      <div class="top-panels-strip" id="topPanelsStrip">
 
     <!-- ═══ 요약 패널 ═══ -->
     <div class="top-panel active" id="top-summary">
@@ -3903,6 +3927,11 @@
         <!-- 인사이트 카드 -->
         <div id="insightsCard"></div>
       </div>
+    </div>
+
+    <!-- ═══ 비교 패널 (월별 연도 비교) ═══ -->
+    <div class="top-panel" id="top-compare">
+      <div id="monthlyBreakdownCard"></div>
     </div>
 
     <!-- ═══ 분석 패널 ═══ -->
@@ -3949,6 +3978,8 @@
         <div class="hm-insights" id="hmInsights" style="display:none"></div>
       </div>
     </div> <!-- /top-analytics -->
+      </div> <!-- /top-panels-strip -->
+    </div> <!-- /top-panels-viewport -->
   </div> <!-- /dashboard -->
 
   <footer>Offline First &middot; Data stays on your device</footer>
@@ -4757,24 +4788,123 @@ async function refreshAll() {
     $('dashboard').classList.add('show');
     $('dataBadge').classList.remove('show');
     rebuildPeriodChips();
-    renderDashboard();
     // 활성 탭에 따라 렌더링
     renderActiveMainTab();
+    // 초기 strip 위치
+    setActiveTopPanel(activeTopIndex);
   }
 }
 
-// 현재 활성화된 메인 탭을 다시 렌더
+// 현재 활성 패널 인덱스 (0=요약, 1=비교, 2=분석)
+let activeTopIndex = 0;
+
+// 모든 패널 렌더 (스와이프 시 옆 패널이 미리 보여야 하므로)
 function renderActiveMainTab() {
-  const topActive = document.querySelector('.top-nav-tab.active');
-  if (!topActive) return;
-  const top = topActive.dataset.top;
-  if (top === 'analytics') {
-    renderDashboard();
-  } else if (top === 'summary') {
-    renderSummaryPage();
-  } else if (top === 'compare') {
-    renderMonthlyBreakdownCard();
+  renderSummaryPage();
+  renderMonthlyBreakdownCard();
+  renderDashboard();
+}
+
+// 활성 패널 변경 (탭 클릭 또는 스와이프 종료 시 호출)
+function setActiveTopPanel(idx) {
+  idx = Math.max(0, Math.min(2, idx));
+  activeTopIndex = idx;
+
+  const strip = $('topPanelsStrip');
+  if (strip) {
+    strip.classList.remove('dragging');
+    strip.style.transform = `translateX(-${idx * (100 / 3)}%)`;
   }
+
+  // 탭 active 클래스 동기화
+  const keys = ['summary', 'compare', 'analytics'];
+  document.querySelectorAll('.top-nav-tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.top === keys[idx]);
+  });
+
+  // 분석 패널로 들어갈 때 히트맵 그리드 사이즈 재계산 트리거
+  if (idx === 2) {
+    requestAnimationFrame(() => {
+      // 히트맵이 hidden이었던 적이 없도록 강제 reflow
+      const grid = $('hmGrid');
+      if (grid) grid.scrollLeft = grid.scrollLeft;
+    });
+  }
+}
+
+// 터치 스와이프
+function initTopPanelSwipe() {
+  const viewport = $('topPanelsViewport');
+  const strip = $('topPanelsStrip');
+  if (!viewport || !strip) return;
+
+  let startX = 0, startY = 0;
+  let currentDelta = 0;
+  let dragging = false;
+  let direction = null; // 'h' | 'v' | null
+  let viewportWidth = 0;
+
+  viewport.addEventListener('touchstart', (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    startX = t.clientX;
+    startY = t.clientY;
+    currentDelta = 0;
+    direction = null;
+    viewportWidth = viewport.clientWidth;
+    dragging = false;
+  }, { passive: true });
+
+  viewport.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+
+    // 첫 이동 시 방향 결정
+    if (!direction) {
+      if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+        direction = Math.abs(dx) > Math.abs(dy) ? 'h' : 'v';
+        if (direction === 'h') {
+          dragging = true;
+          strip.classList.add('dragging');
+        }
+      }
+    }
+
+    if (direction === 'h' && dragging) {
+      // 가로 스크롤 막고 strip 이동
+      currentDelta = dx;
+      // 끝에 도달하면 저항감 (rubber-band)
+      if ((activeTopIndex === 0 && dx > 0) || (activeTopIndex === 2 && dx < 0)) {
+        currentDelta = dx * 0.3;
+      }
+      const baseOffset = -activeTopIndex * (100 / 3);
+      const deltaPercent = (currentDelta / viewportWidth) * (100 / 3);
+      strip.style.transform = `translateX(calc(${baseOffset}% + ${currentDelta}px))`;
+      // 가로 스와이프 중엔 페이지 스크롤 방지
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  viewport.addEventListener('touchend', () => {
+    if (!dragging) return;
+    dragging = false;
+
+    // 스냅: 30% 이상 또는 빠른 속도면 다음 패널로
+    const threshold = viewportWidth * 0.25;
+    let newIdx = activeTopIndex;
+    if (currentDelta < -threshold) newIdx = activeTopIndex + 1;
+    else if (currentDelta > threshold) newIdx = activeTopIndex - 1;
+
+    setActiveTopPanel(newIdx);
+  });
+
+  viewport.addEventListener('touchcancel', () => {
+    if (!dragging) return;
+    dragging = false;
+    setActiveTopPanel(activeTopIndex);
+  });
 }
 
 function filterByPeriod(records, period) {
@@ -9262,24 +9392,17 @@ function setupEvents() {
     openTodayModal();
   });
 
-  // 상단 탑 레벨 탭 전환 (비교 / 분석)
+  // 상단 탑 레벨 탭 전환 (요약 / 비교 / 분석) - 슬라이드 방식
   document.querySelectorAll('.top-nav-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('.top-nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.top-panel').forEach(p => p.classList.remove('active'));
-      tab.classList.add('active');
-      $('top-' + tab.dataset.top).classList.add('active');
-
       const m = tab.dataset.top;
-      if (m === 'analytics') {
-        renderDashboard();
-      } else if (m === 'summary') {
-        renderSummaryPage();
-      } else if (m === 'compare') {
-        renderMonthlyBreakdownCard();
-      }
+      const idx = m === 'summary' ? 0 : (m === 'compare' ? 1 : 2);
+      setActiveTopPanel(idx);
     });
   });
+
+  // 터치 스와이프 초기화
+  initTopPanelSwipe();
 
   $('btnData').addEventListener('click', async () => {
     openModal('dataModal');
