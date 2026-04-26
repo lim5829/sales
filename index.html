@@ -2089,6 +2089,52 @@
     letter-spacing: -0.03em;
     color: #fff;
   }
+  /* 연도 선택 드롭다운 */
+  .ytd-card-year-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  .ytd-card-year-wrap::after {
+    content: '▾';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 11px;
+    pointer-events: none;
+    font-weight: 700;
+  }
+  .ytd-card-year-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #fff;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    padding: 6px 28px 6px 14px;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    outline: none;
+    transition: all 0.15s;
+  }
+  .ytd-card-year-select:hover {
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+  .ytd-card-year-select:focus {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+  }
+  /* 옵션은 시스템 다크 컨텍스트에 맞게 */
+  .ytd-card-year-select option {
+    background: #fff;
+    color: var(--ink);
+    font-weight: 600;
+  }
   .ytd-card-period {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -8922,6 +8968,9 @@ function attachMultiYearLineInteraction(seriesList) {
 }
 
 // ─── 연간 누적 매출 카드 ───
+// 선택된 YTD 연도 (null = 현재 연도)
+let ytdSelectedYear = null;
+
 function renderYtdRevenueCard() {
   const container = $('ytdRevenueCard');
   if (!container) return;
@@ -8932,55 +8981,86 @@ function renderYtdRevenueCard() {
   }
 
   const now = new Date();
-  const year = now.getFullYear();
+  const currentYear = now.getFullYear();
   const todayStr = now.toISOString().slice(0, 10);
-  const ytdStart = `${year}-01-01`;
 
-  // 올해 누적 (1/1 ~ 오늘)
-  const ytdData = analyzePeriodRecords(ytdStart, todayStr);
+  // 데이터 있는 모든 연도
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).sort((a, b) => b - a);
 
-  // 전년 동기간 (전년 1/1 ~ 전년 오늘과 같은 날짜)
-  // 윤년 2/29 등은 28일로 보정해야 하나 간단히 월-일 복제
-  const lastYear = year - 1;
-  const [, mm, dd] = todayStr.split('-');
-  let lastYearTodayStr = `${lastYear}-${mm}-${dd}`;
-  // 유효성 체크 (2/29 → 2/28 보정)
-  const validationDate = new Date(lastYearTodayStr + 'T12:00:00');
-  if (validationDate.toISOString().slice(0, 10) !== lastYearTodayStr) {
-    lastYearTodayStr = `${lastYear}-02-28`;
+  if (dataYears.length === 0) {
+    container.innerHTML = '';
+    return;
   }
-  const lastYtdData = analyzePeriodRecords(`${lastYear}-01-01`, lastYearTodayStr);
 
-  // 최근 3개월 트렌드 (이번달 포함 이전 3개월 vs 그 전 3개월)
-  // 더 간단한 방식: 최근 3개월의 월별 매출 비교
+  // 선택된 연도 결정 (없으면 가장 최근 데이터 연도)
+  if (ytdSelectedYear === null || !dataYears.includes(ytdSelectedYear)) {
+    ytdSelectedYear = dataYears[0];
+  }
+  const year = ytdSelectedYear;
+  const isCurrentYear = year === currentYear;
+
+  // 기간 결정
+  // - 현재 연도: 1/1 ~ 오늘
+  // - 과거 연도: 1/1 ~ 12/31 (전체)
+  const startStr = `${year}-01-01`;
+  let endStr;
+  if (isCurrentYear) {
+    endStr = todayStr;
+  } else {
+    endStr = `${year}-12-31`;
+  }
+
+  const ytdData = analyzePeriodRecords(startStr, endStr);
+
+  // YoY 비교 기간: 전년 동기간
+  const prevYear = year - 1;
+  let prevEndStr;
+  if (isCurrentYear) {
+    // 전년 1/1 ~ 전년 오늘 같은 날짜
+    const [, mm, dd] = todayStr.split('-');
+    prevEndStr = `${prevYear}-${mm}-${dd}`;
+    const validation = new Date(prevEndStr + 'T12:00:00');
+    if (validation.toISOString().slice(0, 10) !== prevEndStr) {
+      prevEndStr = `${prevYear}-02-28`;
+    }
+  } else {
+    prevEndStr = `${prevYear}-12-31`;
+  }
+  const prevYtdData = analyzePeriodRecords(`${prevYear}-01-01`, prevEndStr);
+
+  // 트렌드 기준 월 (현재 연도면 이번 달, 과거 연도면 12월)
+  const trendBaseMonth = isCurrentYear ? now.getMonth() : 11; // 0-indexed
   const last3Months = [];
   for (let i = 2; i >= 0; i--) {
-    const d = new Date(year, now.getMonth() - i, 1);
-    const m = d.getMonth();
-    const y = d.getFullYear();
-    const lastDay = new Date(y, m + 1, 0).getDate();
-    // 이번달이면 오늘까지만
-    const startStr = `${y}-${String(m + 1).padStart(2, '0')}-01`;
-    let endStr;
-    if (i === 0) {
-      endStr = todayStr;
-    } else {
-      endStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    const tm = trendBaseMonth - i;
+    if (tm < 0) {
+      last3Months.push({ year, month: tm + 12 + 1, revenue: 0, isPartial: false, missing: true });
+      continue;
     }
-    const data = analyzePeriodRecords(startStr, endStr);
+    const lastDay = new Date(year, tm + 1, 0).getDate();
+    const mStart = `${year}-${String(tm + 1).padStart(2, '0')}-01`;
+    let mEnd;
+    let isPartial = false;
+    if (isCurrentYear && i === 0) {
+      mEnd = todayStr;
+      isPartial = now.getDate() < lastDay;
+    } else {
+      mEnd = `${year}-${String(tm + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+    const data = analyzePeriodRecords(mStart, mEnd);
     last3Months.push({
-      year: y,
-      month: m + 1,
+      year, month: tm + 1,
       revenue: data?.revenue || 0,
-      isPartial: i === 0 && now.getDate() < lastDay
+      isPartial, missing: false,
     });
   }
 
-  // 트렌드 방향: 3개월간 선형 증감 추이
+  // 트렌드 방향
   let trendDirection = 'flat';
   let trendPct = 0;
-  if (last3Months.every(m => m.revenue > 0)) {
-    // 일평균으로 정규화해서 비교 (이번달 부분 월 보정)
+  const valid3 = last3Months.filter(m => !m.missing && m.revenue > 0);
+  if (valid3.length === 3) {
     const getAvgPerDay = (m, idx) => {
       if (idx === 2 && m.isPartial) {
         return m.revenue / now.getDate();
@@ -8997,34 +9077,37 @@ function renderYtdRevenueCard() {
     }
   }
 
-  // 스파크라인 바: 3개월 매출 (상대 높이)
+  // 스파크라인 바
   const maxMonthRev = Math.max(...last3Months.map(m => m.revenue), 1);
   const sparkBars = last3Months.map((m, i) => {
+    if (m.missing) {
+      return `<div class="ytd-trend-spark-bar dim" style="height:8%;"></div>`;
+    }
     const heightPct = (m.revenue / maxMonthRev) * 100;
     const cls = i === 2 ? '' : 'dim';
     return `<div class="ytd-trend-spark-bar ${cls}" style="height:${Math.max(heightPct, 8)}%;" title="${m.year}.${String(m.month).padStart(2,'0')}: ${m.revenue.toLocaleString()}원"></div>`;
   }).join('');
 
-  // YoY 계산
+  // YoY HTML
   const ytdRev = ytdData?.revenue || 0;
-  const lastRev = lastYtdData?.revenue || 0;
+  const prevRev = prevYtdData?.revenue || 0;
   let yoyHtml;
-  if (!lastYtdData || lastRev === 0) {
+  if (!prevYtdData || prevRev === 0) {
     yoyHtml = `
       <div class="ytd-yoy-val flat">—</div>
       <div class="ytd-yoy-sub">전년 동기 데이터 없음</div>`;
   } else {
-    const diff = ytdRev - lastRev;
-    const yoyPct = (diff / lastRev) * 100;
+    const diff = ytdRev - prevRev;
+    const yoyPct = (diff / prevRev) * 100;
     const cls = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
     const arrow = diff > 0 ? '▲' : (diff < 0 ? '▼' : '―');
     const sign = diff > 0 ? '+' : '';
     yoyHtml = `
       <div class="ytd-yoy-val ${cls}">${arrow} ${sign}${yoyPct.toFixed(1)}%</div>
-      <div class="ytd-yoy-sub">vs ${lastYear}년 동기 ${lastRev.toLocaleString()}원</div>`;
+      <div class="ytd-yoy-sub">vs ${prevYear}년 동기 ${prevRev.toLocaleString()}원</div>`;
   }
 
-  // 트렌드 아이콘/텍스트
+  // 트렌드 라벨
   const trendArrow = trendDirection === 'up' ? '↑'
                    : trendDirection === 'down' ? '↓'
                    : '→';
@@ -9032,26 +9115,36 @@ function renderYtdRevenueCard() {
                   : trendDirection === 'down' ? '하락세'
                   : '유지';
 
-  // 기간 표시
-  const periodLabel = `${year}.01.01 ~ ${todayStr.replace(/-/g, '.')}`;
+  // 기간 라벨
+  const periodLabel = `${startStr.replace(/-/g, '.')} ~ ${endStr.replace(/-/g, '.')}`;
+  const cardLabel = isCurrentYear ? '연간 누적 매출' : `${year}년 매출`;
+  const yoyLabel = isCurrentYear ? '전년 동기 대비 (YoY)' : '전년 대비 (YoY)';
+  const trendLabel = isCurrentYear ? '최근 3개월' : `${trendBaseMonth - 1}~${trendBaseMonth + 1}월`;
+
+  // 연도 선택기 옵션
+  const yearOptions = dataYears.map(y =>
+    `<option value="${y}" ${y === year ? 'selected' : ''}>${y}${y === currentYear ? ' (올해)' : ''}</option>`
+  ).join('');
 
   container.innerHTML = `
     <div class="ytd-card">
       <div class="ytd-card-header">
         <div>
-          <div class="ytd-card-label">연간 누적 매출</div>
+          <div class="ytd-card-label">${cardLabel}</div>
           <div class="ytd-card-period" style="margin-top:4px;">${periodLabel}</div>
         </div>
-        <div class="ytd-card-year">${year}</div>
+        <div class="ytd-card-year-wrap">
+          <select class="ytd-card-year-select" id="ytdYearSelect">${yearOptions}</select>
+        </div>
       </div>
       <div class="ytd-card-revenue">${ytdRev.toLocaleString()}<span class="u">원</span></div>
       <div class="ytd-card-yoy">
         <div class="ytd-yoy-left">
-          <div class="ytd-yoy-label">전년 동기 대비 (YoY)</div>
+          <div class="ytd-yoy-label">${yoyLabel}</div>
           ${yoyHtml}
         </div>
         <div class="ytd-trend">
-          <div class="ytd-trend-label">최근 3개월</div>
+          <div class="ytd-trend-label">${trendLabel}</div>
           <div class="ytd-trend-val ${trendDirection}">
             ${trendArrow} ${trendText}
             <span class="ytd-trend-spark">${sparkBars}</span>
@@ -9060,6 +9153,15 @@ function renderYtdRevenueCard() {
       </div>
     </div>
   `;
+
+  // 연도 변경 이벤트
+  const sel = $('ytdYearSelect');
+  if (sel) {
+    sel.addEventListener('change', (e) => {
+      ytdSelectedYear = parseInt(e.target.value);
+      renderYtdRevenueCard();
+    });
+  }
 }
 
 // ─── 인사이트 카드 ───
