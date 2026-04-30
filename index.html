@@ -894,6 +894,35 @@
     line-height: 1.6;
   }
 
+  /* 데이터 미리보기 출력 */
+  .inspect-output {
+    margin-top: 10px;
+    max-height: 360px;
+    overflow-y: auto;
+    overflow-x: auto;
+    background: #0a0a0a;
+    color: #e4e4e7;
+    border-radius: var(--r-md);
+    padding: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: none;
+  }
+  .inspect-output.show { display: block; }
+  .inspect-output .key { color: #93c5fd; }
+  .inspect-output .str { color: #86efac; }
+  .inspect-output .num { color: #fde68a; }
+  .inspect-output .header {
+    color: #fbbf24;
+    font-weight: 700;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #27272a;
+    padding-bottom: 6px;
+  }
+
   /* 파일 리스트 */
   .file-list { max-height: 200px; overflow-y: auto; margin-top: 10px; }
   .file-list-item {
@@ -4154,6 +4183,12 @@
     </div>
 
     <div class="modal-section">
+      <div class="modal-section-title">🔍 데이터 구조 확인</div>
+      <button class="btn-outline" id="btnInspectData">최근 레코드 10건 보기</button>
+      <div id="inspectOutput" class="inspect-output"></div>
+    </div>
+
+    <div class="modal-section">
       <div class="modal-section-title">💾 백업 · 복원</div>
       <button class="btn-outline" id="btnExport">전체 데이터 백업 (JSON)</button>
       <button class="btn-outline" id="btnImport">백업 파일 복원</button>
@@ -6045,6 +6080,71 @@ async function deleteByDate() {
   updateDeletePreview();
 
   await refreshAll();
+}
+
+// ─── 데이터 구조 미리보기 (디버깅용) ───
+function inspectRecords() {
+  const output = $('inspectOutput');
+  if (!output) return;
+
+  if (allRecords.length === 0) {
+    output.innerHTML = '<span style="color:#fca5a5;">데이터 없음</span>';
+    output.classList.add('show');
+    return;
+  }
+
+  // 최근 10건 (날짜순 정렬해서 마지막)
+  const sorted = [...allRecords].sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return (a.time || '').localeCompare(b.time || '');
+  });
+  const recent = sorted.slice(-10);
+
+  // 모든 키 수집
+  const allKeys = new Set();
+  allRecords.slice(0, 100).forEach(r => {
+    Object.keys(r).forEach(k => allKeys.add(k));
+  });
+
+  // desc 필드 샘플 분석
+  const descs = allRecords.map(r => r.desc).filter(d => d && typeof d === 'string');
+  const uniqueDescs = [...new Set(descs)];
+
+  let html = `<div class="header">📊 전체 ${allRecords.length.toLocaleString()}건 | 필드: ${[...allKeys].join(', ')}</div>`;
+
+  html += `<div class="header" style="margin-top:8px;">desc 필드 샘플 (총 ${uniqueDescs.length}종 / ${descs.length}건)</div>`;
+  if (uniqueDescs.length > 0) {
+    const sample = uniqueDescs.slice(0, 15);
+    html += sample.map((d, i) => `${i + 1}. ${_inspectEscape(d) || '(빈 문자열)'}`).join('\n');
+    if (uniqueDescs.length > 15) html += `\n... 외 ${uniqueDescs.length - 15}종`;
+  } else {
+    html += '<span style="color:#fca5a5;">desc 필드 데이터 없음</span>';
+  }
+
+  html += `\n\n<div class="header" style="margin-top:8px;">최근 레코드 10건</div>`;
+  html += recent.map((r, i) => {
+    const formatted = Object.entries(r).map(([k, v]) => {
+      let val;
+      if (typeof v === 'string') val = `<span class="str">"${_inspectEscape(v)}"</span>`;
+      else if (typeof v === 'number') val = `<span class="num">${v}</span>`;
+      else if (v === null || v === undefined) val = `<span style="color:#71717a;">null</span>`;
+      else val = String(v);
+      return `<span class="key">${k}</span>: ${val}`;
+    }).join(', ');
+    return `[${i + 1}] {${formatted}}`;
+  }).join('\n\n');
+
+  output.innerHTML = html;
+  output.classList.add('show');
+}
+
+function _inspectEscape(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 
@@ -9723,6 +9823,10 @@ function setupEvents() {
   $('deleteDateInput').addEventListener('input', updateDeletePreview);
   $('deleteDateInput').addEventListener('change', updateDeletePreview);
   $('btnDeleteByDate').addEventListener('click', deleteByDate);
+
+  // 데이터 구조 미리보기
+  const btnInspect = $('btnInspectData');
+  if (btnInspect) btnInspect.addEventListener('click', inspectRecords);
 
   // 설정
   $('settingCurrency').addEventListener('change', e => saveSetting('currency', e.target.value));
