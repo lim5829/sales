@@ -894,35 +894,6 @@
     line-height: 1.6;
   }
 
-  /* 데이터 미리보기 출력 */
-  .inspect-output {
-    margin-top: 10px;
-    max-height: 360px;
-    overflow-y: auto;
-    overflow-x: auto;
-    background: #0a0a0a;
-    color: #e4e4e7;
-    border-radius: var(--r-md);
-    padding: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-all;
-    display: none;
-  }
-  .inspect-output.show { display: block; }
-  .inspect-output .key { color: #93c5fd; }
-  .inspect-output .str { color: #86efac; }
-  .inspect-output .num { color: #fde68a; }
-  .inspect-output .header {
-    color: #fbbf24;
-    font-weight: 700;
-    margin-bottom: 8px;
-    border-bottom: 1px solid #27272a;
-    padding-bottom: 6px;
-  }
-
   /* 파일 리스트 */
   .file-list { max-height: 200px; overflow-y: auto; margin-top: 10px; }
   .file-list-item {
@@ -2565,6 +2536,287 @@
     font-size: 11px;
   }
 
+  /* 비교 - 다중 연도 달력 (myc = multi-year calendar) */
+  .myc-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 16px 12px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-sm);
+  }
+  .myc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px 12px 4px;
+  }
+  .myc-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .myc-title-year {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .myc-nav {
+    display: flex;
+    gap: 4px;
+  }
+  .myc-nav-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-sm);
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    font-weight: 600;
+  }
+  .myc-nav-btn:hover { background: var(--bg-muted); color: var(--ink); }
+
+  /* 연도 칩 (어떤 연도 보여줄지 선택) */
+  .myc-year-chips {
+    display: flex;
+    gap: 6px;
+    margin: 0 4px 12px 4px;
+    flex-wrap: wrap;
+  }
+  .myc-year-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background: var(--card);
+    border: 1px solid var(--line-strong);
+    border-radius: 99px;
+    font-family: 'Pretendard', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .myc-year-chip:hover:not(.disabled) { background: var(--bg-muted); }
+  .myc-year-chip.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .myc-year-chip.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .myc-year-chip-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* 요일 헤더 */
+  .myc-dow-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: 4px;
+  }
+  .myc-dow-label {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-faint);
+    padding: 6px 0;
+    letter-spacing: 0.05em;
+  }
+  .myc-dow-label.sun { color: var(--danger); }
+  .myc-dow-label.sat { color: var(--accent); }
+
+  /* 달력 그리드 */
+  .myc-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .myc-cell {
+    aspect-ratio: 1 / 1.18;
+    background: var(--bg-soft);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    padding: 4px 4px 3px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+  }
+  .myc-cell:hover { border-color: var(--line-strong); }
+  .myc-cell.empty {
+    background: transparent;
+    cursor: default;
+    border: none;
+  }
+  .myc-cell.today {
+    background: var(--accent-tint);
+    border-color: rgba(0, 71, 171, 0.3);
+  }
+  .myc-cell.future {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .myc-cell-day {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1;
+    margin-bottom: 3px;
+    flex-shrink: 0;
+  }
+  .myc-cell-day.sun { color: var(--danger); }
+  .myc-cell-day.sat { color: var(--accent); }
+  .myc-cell.today .myc-cell-day { color: var(--accent); }
+  .myc-cell-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+    flex: 1;
+    min-height: 0;
+  }
+  .myc-year-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 2px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  .myc-year-row-label {
+    font-weight: 700;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+  }
+  .myc-year-row-amt {
+    font-weight: 600;
+    color: var(--ink-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: right;
+  }
+  .myc-year-row.current {
+    /* 현재 연도 행 강조 */
+  }
+  .myc-year-row.current .myc-year-row-label,
+  .myc-year-row.current .myc-year-row-amt {
+    color: var(--accent);
+    font-weight: 800;
+  }
+  .myc-cell.today .myc-year-row.current .myc-year-row-label,
+  .myc-cell.today .myc-year-row.current .myc-year-row-amt {
+    color: var(--accent);
+  }
+  .myc-year-row.empty .myc-year-row-amt {
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+
+  /* 일별 상세 모달 (탭 시 펼침) */
+  .myc-detail {
+    display: none;
+    margin: 12px 4px 0;
+    padding: 14px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+  }
+  .myc-detail.show { display: block; animation: fadeIn 0.2s ease; }
+  .myc-detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .myc-detail-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .myc-detail-close {
+    background: transparent;
+    border: none;
+    color: var(--ink-dim);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+  }
+  .myc-detail-row {
+    display: grid;
+    grid-template-columns: 50px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .myc-detail-row:last-child { border-bottom: none; }
+  .myc-detail-year {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .myc-detail-row.current .myc-detail-year { color: var(--accent); }
+  .myc-detail-bar {
+    height: 5px;
+    background: var(--bg-muted);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .myc-detail-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    opacity: 0.4;
+    border-radius: 99px;
+    transition: width 0.5s cubic-bezier(0.22,1,0.36,1);
+  }
+  .myc-detail-row.current .myc-detail-bar-fill { opacity: 1; }
+  .myc-detail-amt {
+    font-family: 'Pretendard', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .myc-detail-row.current .myc-detail-amt { color: var(--accent); font-weight: 800; }
+  .myc-detail-empty {
+    color: var(--ink-faint);
+    font-size: 12px;
+    font-weight: 500;
+  }
+
   /* 요약 - 월별 연도 비교 (mbd = monthly breakdown) */
   .mbd-card {
     background: var(--card);
@@ -4069,6 +4321,7 @@
 
     <!-- ═══ 비교 패널 (월별 연도 비교) ═══ -->
     <div class="top-panel" id="top-compare">
+      <div id="multiYearCalendarCard"></div>
       <div id="monthlyBreakdownCard"></div>
     </div>
 
@@ -4180,12 +4433,6 @@
         </div>
         <div class="manual-recent" id="manualRecent"></div>
       </div>
-    </div>
-
-    <div class="modal-section">
-      <div class="modal-section-title">🔍 데이터 구조 확인</div>
-      <button class="btn-outline" id="btnInspectData">최근 레코드 10건 보기</button>
-      <div id="inspectOutput" class="inspect-output"></div>
     </div>
 
     <div class="modal-section">
@@ -4965,6 +5212,7 @@ let activeTopIndex = 0;
 // 모든 패널 렌더 (스와이프 시 옆 패널이 미리 보여야 하므로)
 function renderActiveMainTab() {
   renderSummaryPage();
+  renderMultiYearCalendarCard();
   renderMonthlyBreakdownCard();
   renderDashboard();
 }
@@ -6082,70 +6330,6 @@ async function deleteByDate() {
   await refreshAll();
 }
 
-// ─── 데이터 구조 미리보기 (디버깅용) ───
-function inspectRecords() {
-  const output = $('inspectOutput');
-  if (!output) return;
-
-  if (allRecords.length === 0) {
-    output.innerHTML = '<span style="color:#fca5a5;">데이터 없음</span>';
-    output.classList.add('show');
-    return;
-  }
-
-  // 최근 10건 (날짜순 정렬해서 마지막)
-  const sorted = [...allRecords].sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return (a.time || '').localeCompare(b.time || '');
-  });
-  const recent = sorted.slice(-10);
-
-  // 모든 키 수집
-  const allKeys = new Set();
-  allRecords.slice(0, 100).forEach(r => {
-    Object.keys(r).forEach(k => allKeys.add(k));
-  });
-
-  // desc 필드 샘플 분석
-  const descs = allRecords.map(r => r.desc).filter(d => d && typeof d === 'string');
-  const uniqueDescs = [...new Set(descs)];
-
-  let html = `<div class="header">📊 전체 ${allRecords.length.toLocaleString()}건 | 필드: ${[...allKeys].join(', ')}</div>`;
-
-  html += `<div class="header" style="margin-top:8px;">desc 필드 샘플 (총 ${uniqueDescs.length}종 / ${descs.length}건)</div>`;
-  if (uniqueDescs.length > 0) {
-    const sample = uniqueDescs.slice(0, 15);
-    html += sample.map((d, i) => `${i + 1}. ${_inspectEscape(d) || '(빈 문자열)'}`).join('\n');
-    if (uniqueDescs.length > 15) html += `\n... 외 ${uniqueDescs.length - 15}종`;
-  } else {
-    html += '<span style="color:#fca5a5;">desc 필드 데이터 없음</span>';
-  }
-
-  html += `\n\n<div class="header" style="margin-top:8px;">최근 레코드 10건</div>`;
-  html += recent.map((r, i) => {
-    const formatted = Object.entries(r).map(([k, v]) => {
-      let val;
-      if (typeof v === 'string') val = `<span class="str">"${_inspectEscape(v)}"</span>`;
-      else if (typeof v === 'number') val = `<span class="num">${v}</span>`;
-      else if (v === null || v === undefined) val = `<span style="color:#71717a;">null</span>`;
-      else val = String(v);
-      return `<span class="key">${k}</span>: ${val}`;
-    }).join(', ');
-    return `[${i + 1}] {${formatted}}`;
-  }).join('\n\n');
-
-  output.innerHTML = html;
-  output.classList.add('show');
-}
-
-function _inspectEscape(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
 
 // ---------- GitHub 토큰 인증 ----------
@@ -8746,7 +8930,6 @@ function renderSummaryPage() {
   renderYtdRevenueCard();
   renderMultiYearLineCard();
   renderInsightsCard();
-  renderMonthlyBreakdownCard();
 }
 
 // 다중 연도 라인 차트 - 선택된 연도 상태 (Set)
@@ -9459,6 +9642,316 @@ function renderInsightsCard() {
     </div>`;
 }
 
+// ─── 다중 연도 달력 (myc) ───
+// 상태: 현재 보고 있는 월 (이번달 기준), 표시 활성 연도 Set, 선택된 일자
+let mycViewMonth = null;        // 'YYYY-MM' (실제 연도는 의미 없음, 월만 사용)
+let mycActiveYears = null;      // Set
+let mycSelectedDay = null;      // 1~31 또는 null
+
+function renderMultiYearCalendarCard() {
+  const container = $('multiYearCalendarCard');
+  if (!container) return;
+
+  if (allRecords.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // 데이터 있는 모든 연도
+  const dataYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).sort((a, b) => b - a);
+  if (dataYears.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // 초기 상태
+  if (!mycViewMonth) {
+    const now = new Date();
+    mycViewMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  if (mycActiveYears === null) {
+    // 기본: 최근 3개 연도 활성
+    mycActiveYears = new Set(dataYears.slice(0, 3));
+  } else {
+    // 사라진 연도 정리
+    mycActiveYears = new Set([...mycActiveYears].filter(y => dataYears.includes(y)));
+    if (mycActiveYears.size === 0) mycActiveYears.add(dataYears[0]);
+  }
+
+  const [y, m] = mycViewMonth.split('-').map(Number);
+  const monthNum = m; // 1~12
+  const lastDay = new Date(y, monthNum, 0).getDate();
+  const firstDow = new Date(y, monthNum - 1, 1).getDay(); // 0=일
+
+  // 활성 연도 배열 (최근 → 과거)
+  const activeYearsArr = [...mycActiveYears].sort((a, b) => b - a);
+
+  // (년, 월) 단위 일자별 매출 캐시 - 활성 연도 모두에 대해
+  // ymdRev[year][day] = amount
+  const ymdRev = {};
+  activeYearsArr.forEach(yr => {
+    ymdRev[yr] = {};
+  });
+  const yearStr2Year = {};
+  activeYearsArr.forEach(yr => {
+    yearStr2Year[String(yr)] = yr;
+  });
+  const monthStr = String(monthNum).padStart(2, '0');
+  allRecords.forEach(r => {
+    const yPart = r.date.slice(0, 4);
+    const mPart = r.date.slice(5, 7);
+    if (mPart !== monthStr) return;
+    const yr = yearStr2Year[yPart];
+    if (yr === undefined) return;
+    const day = parseInt(r.date.slice(8, 10));
+    ymdRev[yr][day] = (ymdRev[yr][day] || 0) + r.amount;
+  });
+
+  // 연도별 색상
+  const yearColor = (yr, idx) => {
+    // 첫 번째(가장 최근) = accent, 그 외는 회색 톤
+    return null;
+  };
+
+  // 월 이동 가능 여부
+  const today = new Date();
+  const monthHasData = (() => {
+    return dataYears.some(yr => {
+      const start = `${yr}-${monthStr}-01`;
+      const end = `${yr}-${monthStr}-${String(lastDay).padStart(2, '0')}`;
+      return allRecords.some(r => r.date >= start && r.date <= end);
+    });
+  })();
+
+  // 연도 칩 HTML
+  const yearChipsHtml = dataYears.map(yr => {
+    const active = mycActiveYears.has(yr);
+    return `
+      <div class="myc-year-chip ${active ? 'active' : ''}" data-year="${yr}">
+        <span class="myc-year-chip-dot"></span>${yr}
+      </div>`;
+  }).join('');
+
+  // 요일 헤더
+  const dowLabels = ['일', '월', '화', '수', '목', '금', '토'];
+  const dowRowHtml = dowLabels.map((d, i) => {
+    const cls = i === 0 ? 'sun' : (i === 6 ? 'sat' : '');
+    return `<div class="myc-dow-label ${cls}">${d}</div>`;
+  }).join('');
+
+  // 달력 셀
+  let cellsHtml = '';
+  // 1일 앞 빈 칸
+  for (let i = 0; i < firstDow; i++) {
+    cellsHtml += `<div class="myc-cell empty"></div>`;
+  }
+
+  const todayStr = today.toISOString().slice(0, 10);
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth() + 1;
+  const todayD = today.getDate();
+
+  for (let d = 1; d <= lastDay; d++) {
+    const dow = new Date(y, monthNum - 1, d).getDay();
+    const dowCls = dow === 0 ? 'sun' : (dow === 6 ? 'sat' : '');
+
+    // 셀 클래스: 오늘 / 미래
+    const cellClasses = [];
+    // "오늘" 표시: 가장 최근 연도(활성 연도 중 첫번째)와 일치하는 경우
+    const latestYear = activeYearsArr[0];
+    if (latestYear === todayY && monthNum === todayM && d === todayD) {
+      cellClasses.push('today');
+    }
+    // 미래 (가장 최근 연도 기준 미래일자)
+    let isFuture = false;
+    if (latestYear === todayY && monthNum > todayM) isFuture = true;
+    else if (latestYear === todayY && monthNum === todayM && d > todayD) isFuture = true;
+    else if (latestYear > todayY) isFuture = true;
+    if (isFuture) cellClasses.push('future');
+
+    // 연도별 매출 행 (활성 연도 순서대로, 미래/데이터 없음 처리)
+    const stack = activeYearsArr.map((yr, idx) => {
+      const isLatest = idx === 0;
+      const rev = ymdRev[yr] && ymdRev[yr][d] ? ymdRev[yr][d] : 0;
+
+      // 연도 약어 ('26)
+      const yrShort = `'${String(yr).slice(2)}`;
+
+      // 미래 일자 처리 (해당 연도 기준)
+      const isYearFuture = (yr === todayY && (monthNum > todayM || (monthNum === todayM && d > todayD)))
+                       || (yr > todayY);
+
+      let amt;
+      if (isYearFuture) {
+        amt = '—';
+      } else if (rev === 0) {
+        amt = '—';
+      } else {
+        amt = formatCompactKrw(rev);
+      }
+
+      const rowCls = [];
+      if (isLatest) rowCls.push('current');
+      if (rev === 0 || isYearFuture) rowCls.push('empty');
+
+      return `
+        <div class="myc-year-row ${rowCls.join(' ')}">
+          <span class="myc-year-row-label">${yrShort}</span>
+          <span class="myc-year-row-amt">${amt}</span>
+        </div>`;
+    }).join('');
+
+    cellsHtml += `
+      <div class="myc-cell ${cellClasses.join(' ')}" data-day="${d}">
+        <div class="myc-cell-day ${dowCls}">${d}</div>
+        <div class="myc-cell-stack">${stack}</div>
+      </div>`;
+  }
+
+  container.innerHTML = `
+    <div class="myc-card">
+      <div class="myc-header">
+        <div class="myc-title">
+          ${monthNum}월
+          <span class="myc-title-year">${y}년 기준</span>
+        </div>
+        <div class="myc-nav">
+          <button class="myc-nav-btn" id="mycPrev" title="이전 월">‹</button>
+          <button class="myc-nav-btn" id="mycNext" title="다음 월">›</button>
+        </div>
+      </div>
+      <div class="myc-year-chips">${yearChipsHtml}</div>
+      <div class="myc-dow-row">${dowRowHtml}</div>
+      <div class="myc-grid">${cellsHtml}</div>
+      <div class="myc-detail" id="mycDetail"></div>
+    </div>`;
+
+  // 네비 이벤트
+  $('mycPrev').addEventListener('click', () => {
+    mycViewMonth = addMonths(mycViewMonth, -1);
+    mycSelectedDay = null;
+    renderMultiYearCalendarCard();
+  });
+  $('mycNext').addEventListener('click', () => {
+    mycViewMonth = addMonths(mycViewMonth, 1);
+    mycSelectedDay = null;
+    renderMultiYearCalendarCard();
+  });
+
+  // 연도 칩 토글
+  container.querySelectorAll('.myc-year-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const yr = parseInt(chip.dataset.year);
+      if (mycActiveYears.has(yr)) {
+        if (mycActiveYears.size > 1) mycActiveYears.delete(yr);
+      } else {
+        mycActiveYears.add(yr);
+      }
+      renderMultiYearCalendarCard();
+    });
+  });
+
+  // 일자 셀 클릭 → 상세 패널 펼침
+  container.querySelectorAll('.myc-cell[data-day]').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const day = parseInt(cell.dataset.day);
+      if (mycSelectedDay === day) {
+        mycSelectedDay = null;
+        const detail = $('mycDetail');
+        if (detail) detail.classList.remove('show');
+      } else {
+        mycSelectedDay = day;
+        renderMycDetail(monthNum, ymdRev, dataYears);
+      }
+    });
+  });
+
+  // 선택 유지
+  if (mycSelectedDay) {
+    renderMycDetail(monthNum, ymdRev, dataYears);
+  }
+}
+
+function renderMycDetail(monthNum, ymdRev, dataYears) {
+  const detail = $('mycDetail');
+  if (!detail || !mycSelectedDay) return;
+
+  const day = mycSelectedDay;
+  const monthStr = String(monthNum).padStart(2, '0');
+  const dayStr = String(day).padStart(2, '0');
+
+  // 전체 연도(데이터 있는)에 대해 매출 표시
+  const allYears = [...new Set(allRecords.map(r => r.date.slice(0, 4)))]
+    .map(Number).sort((a, b) => b - a);
+
+  const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth() + 1;
+  const todayD = today.getDate();
+
+  // 매출 수집
+  const rows = allYears.map(yr => {
+    let rev = 0;
+    allRecords.forEach(r => {
+      if (r.date === `${yr}-${monthStr}-${dayStr}`) rev += r.amount;
+    });
+    const isFuture = (yr > todayY) || (yr === todayY && (monthNum > todayM || (monthNum === todayM && day > todayD)));
+    return { year: yr, revenue: rev, isFuture };
+  });
+
+  const maxRev = Math.max(...rows.map(r => r.revenue), 1);
+  const dow = new Date(allYears[0], monthNum - 1, day).getDay();
+  const dowName = ['일','월','화','수','목','금','토'][dow];
+
+  const rowsHtml = rows.map((r, idx) => {
+    const isCurrent = idx === 0; // 가장 최근 연도
+    const pct = r.revenue > 0 ? (r.revenue / maxRev * 100).toFixed(1) : 0;
+
+    let amtHtml;
+    if (r.isFuture) {
+      amtHtml = `<span class="myc-detail-empty">—</span>`;
+    } else if (r.revenue === 0) {
+      amtHtml = `<span class="myc-detail-empty">데이터 없음</span>`;
+    } else {
+      amtHtml = `${r.revenue.toLocaleString()}원`;
+    }
+
+    return `
+      <div class="myc-detail-row ${isCurrent ? 'current' : ''}">
+        <div class="myc-detail-year">${r.year}</div>
+        <div class="myc-detail-bar">
+          <div class="myc-detail-bar-fill" style="width:${pct}%;"></div>
+        </div>
+        <div class="myc-detail-amt">${amtHtml}</div>
+      </div>`;
+  }).join('');
+
+  detail.innerHTML = `
+    <div class="myc-detail-header">
+      <div class="myc-detail-title">${monthNum}월 ${day}일 (${dowName})</div>
+      <button class="myc-detail-close" onclick="closeMycDetail()">✕</button>
+    </div>
+    ${rowsHtml}
+  `;
+  detail.classList.add('show');
+}
+
+function closeMycDetail() {
+  mycSelectedDay = null;
+  const detail = $('mycDetail');
+  if (detail) detail.classList.remove('show');
+}
+
+// 짧은 한국 통화 (셀 안에 들어갈 수 있도록)
+function formatCompactKrw(n) {
+  if (n >= 10000000) return (n / 10000000).toFixed(1) + '천만';
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + '백만';
+  if (n >= 10000) return Math.round(n / 10000) + '만';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+  return n.toString();
+}
+
 // ─── 월별 연도 비교 카드 (1월~12월 세로 리스트, 각 월 접기/펼치기) ───
 // 어느 월이 펼쳐져 있는지 상태 유지 (초기: 현재 월 하나만 열림)
 let mbdExpandedMonths = null;
@@ -9823,10 +10316,6 @@ function setupEvents() {
   $('deleteDateInput').addEventListener('input', updateDeletePreview);
   $('deleteDateInput').addEventListener('change', updateDeletePreview);
   $('btnDeleteByDate').addEventListener('click', deleteByDate);
-
-  // 데이터 구조 미리보기
-  const btnInspect = $('btnInspectData');
-  if (btnInspect) btnInspect.addEventListener('click', inspectRecords);
 
   // 설정
   $('settingCurrency').addEventListener('change', e => saveSetting('currency', e.target.value));
